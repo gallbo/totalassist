@@ -57,7 +57,6 @@ export default function RegistroPage() {
         >
           <Input
             id="firstName"
-            autoComplete="given-name"
             disabled={submitting}
             {...register("firstName")}
           />
@@ -70,7 +69,6 @@ export default function RegistroPage() {
         >
           <Input
             id="lastName"
-            autoComplete="family-name"
             disabled={submitting}
             {...register("lastName")}
           />
@@ -80,7 +78,6 @@ export default function RegistroPage() {
           <Input
             id="email"
             type="email"
-            autoComplete="email"
             disabled={submitting}
             {...register("email")}
           />
@@ -90,7 +87,6 @@ export default function RegistroPage() {
           <Input
             id="phone"
             type="tel"
-            autoComplete="tel"
             disabled={submitting}
             {...register("phone")}
           />

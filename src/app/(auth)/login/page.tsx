@@ -60,7 +60,6 @@ export default function LoginPage() {
           <Input
             id="email"
             type="email"
-            autoComplete="email"
             disabled={submitting}
             {...register("email")}
           />
@@ -74,7 +73,7 @@ export default function LoginPage() {
           <Input
             id="password"
             type="password"
-            autoComplete="current-password"
+            autoComplete="new-password"
             disabled={submitting}
             {...register("password")}
           />

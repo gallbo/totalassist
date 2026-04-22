@@ -47,7 +47,6 @@ export default function RecuperarAccesoPage() {
           <Input
             id="email"
             type="email"
-            autoComplete="email"
             disabled={submitting}
             {...register("email")}
           />
