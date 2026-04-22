@@ -179,4 +179,15 @@ body {
   html {
     @apply font-sans;
   }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [data-slot="button"]:not([disabled]),
+  a[href],
+  label[for],
+  summary,
+  [type="checkbox"],
+  [type="radio"],
+  select {
+    cursor: pointer;
+  }
 }
