@@ -27,8 +27,8 @@ export function Header({ session }: HeaderProps) {
   const agencyName = "Espinosa de los Monteros";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+    <header>
+      <div className="flex w-full items-center justify-between gap-4 py-2">
         <div className="flex items-center">
           <Logo variant="compact" className="lg:hidden" />
           <Logo variant="full" className="hidden lg:flex" />
