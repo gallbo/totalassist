@@ -17,10 +17,10 @@ export default async function AppLayout({
 
   return (
     <div className="flex min-h-screen flex-col bg-neutral-50">
-      <Header session={session} />
       <main className="relative flex-1 overflow-hidden">
-        <BackgroundPattern />
-        <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <BackgroundPattern variant="subtle" />
+        <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-5 px-3 py-5 sm:px-5 sm:py-6 lg:px-8">
+          <Header session={session} />
           {children}
         </div>
       </main>
