@@ -1,27 +1,55 @@
 import { z } from "zod";
 
+const passwordPolicy = z
+  .string()
+  .regex(
+    /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_]).{10,}$/,
+    "Tu contraseña debe tener al menos 10 caracteres, con mayúsculas, minúsculas, números y un símbolo.",
+  );
+
+const cedulaPolicy = z
+  .string()
+  .trim()
+  .transform((value) => value.toUpperCase())
+  .pipe(
+    z
+      .string()
+      .regex(
+        /^(?:[A-Z]\d{6}|\d{5})$/,
+        "La cédula debe ser una letra seguida de 6 dígitos (ej. H377848) o 5 dígitos si es provisional.",
+      ),
+  );
+
 export const loginSchema = z.object({
   email: z.email({ message: "Ingresa un correo válido" }),
-  password: z.string().min(6, "Mínimo 6 caracteres"),
+  password: z.string().min(1, "Escribe tu contraseña"),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
 export const registerSchema = z
   .object({
-    firstName: z.string().min(2, "Ingresa tu nombre"),
-    lastName: z.string().min(2, "Ingresa tus apellidos"),
-    email: z.email({ message: "Ingresa un correo válido" }),
-    phone: z
+    nombre: z.string().trim().min(2, "Ingresa tu nombre"),
+    apellido_paterno: z.string().trim().min(2, "Ingresa tu apellido paterno"),
+    apellido_materno: z
       .string()
+      .trim()
+      .max(150, "Apellido materno demasiado largo")
+      .optional()
+      .or(z.literal("")),
+    email: z.email({ message: "Ingresa un correo válido" }),
+    telefono: z
+      .string()
+      .trim()
       .min(8, "Ingresa un teléfono válido")
       .regex(/^[0-9+\-\s()]+$/, "Solo números y símbolos de teléfono"),
-    password: z.string().min(8, "Mínimo 8 caracteres"),
-    confirmPassword: z.string(),
+    cedula: cedulaPolicy,
+    password: passwordPolicy,
+    password_confirmation: z.string(),
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine((data) => data.password === data.password_confirmation, {
     message: "Las contraseñas no coinciden",
-    path: ["confirmPassword"],
+    path: ["password_confirmation"],
   });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
@@ -31,3 +59,15 @@ export const recoverSchema = z.object({
 });
 
 export type RecoverInput = z.infer<typeof recoverSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    password: passwordPolicy,
+    password_confirmation: z.string(),
+  })
+  .refine((data) => data.password === data.password_confirmation, {
+    message: "Las contraseñas no coinciden",
+    path: ["password_confirmation"],
+  });
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
