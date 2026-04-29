@@ -5,10 +5,7 @@ type AgencyBadgeProps = {
   className?: string;
 };
 
-export function AgencyBadge({
-  name = "Espinosa de los Monteros",
-  className,
-}: AgencyBadgeProps) {
+export function AgencyBadge({ name = "Broker", className }: AgencyBadgeProps) {
   return (
     <div
       className={cn(

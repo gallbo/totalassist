@@ -1,0 +1,51 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { getServerAccessToken } from "@/lib/auth-tokens";
+import { ApiError } from "@/lib/api/client";
+import { brokerApi, type PaqueteContratado } from "@/lib/api/brokers";
+
+export type ActionResult<T = void> =
+  | { ok: true; data: T }
+  | { ok: false; message: string; code?: string };
+
+async function withToken<T>(
+  fn: (token: string) => Promise<T>,
+): Promise<ActionResult<T>> {
+  const token = await getServerAccessToken();
+  if (!token) {
+    return {
+      ok: false,
+      message: "Tu sesión expiró. Vuelve a iniciar sesión.",
+      code: "no_autenticado",
+    };
+  }
+  try {
+    const data = await fn(token);
+    return { ok: true, data };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return { ok: false, message: error.message, code: error.code };
+    }
+    return {
+      ok: false,
+      message:
+        "Ocurrió un problema, intenta de nuevo. Si persiste, contáctanos.",
+    };
+  }
+}
+
+export async function contratarPaqueteAction(
+  paqueteId: number,
+): Promise<ActionResult<PaqueteContratado>> {
+  const result = await withToken((t) =>
+    brokerApi.contratarPaquete(t, paqueteId),
+  );
+  if (result.ok) {
+    revalidatePath("/paquetes");
+    revalidatePath("/casos");
+    revalidatePath("/casos/nuevo");
+    revalidatePath("/dashboard");
+  }
+  return result;
+}
