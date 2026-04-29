@@ -7,10 +7,18 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Separator } from "@/components/ui/separator";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Field } from "@/components/forms/field";
 import { registerSchema, type RegisterInput } from "@/lib/schemas/auth";
+import { brokerApi } from "@/lib/api/brokers";
+import { ApiError } from "@/lib/api/client";
+
+const ERROR_FIELD_MAP: Record<string, keyof RegisterInput> = {
+  email_duplicado: "email",
+  cedula_invalida: "cedula",
+};
 
 export default function RegistroPage() {
   const router = useRouter();
@@ -19,24 +27,54 @@ export default function RegistroPage() {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
+      nombre: "",
+      apellido_paterno: "",
+      apellido_materno: "",
       email: "",
-      phone: "",
+      telefono: "",
+      cedula: "",
       password: "",
-      confirmPassword: "",
+      password_confirmation: "",
     },
   });
 
-  const onSubmit = async (_values: RegisterInput) => {
+  const onSubmit = async (values: RegisterInput) => {
     setSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    toast.success("Cuenta creada. Inicia sesión con tus credenciales.");
-    router.push("/login");
+    try {
+      await brokerApi.registrar({
+        nombre: values.nombre,
+        apellido_paterno: values.apellido_paterno,
+        apellido_materno: values.apellido_materno || null,
+        email: values.email,
+        telefono: values.telefono,
+        cedula: values.cedula,
+        password: values.password,
+      });
+
+      toast.success("Cuenta creada. Inicia sesión con tus credenciales.");
+      router.push("/login");
+    } catch (error) {
+      if (error instanceof ApiError && error.code) {
+        const field = ERROR_FIELD_MAP[error.code];
+        if (field) {
+          setError(field, { type: "server", message: error.message });
+        }
+        toast.error(error.message);
+      } else if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error(
+          "Ocurrió un problema, intenta de nuevo. Si persiste, contáctanos.",
+        );
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -52,25 +90,47 @@ export default function RegistroPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field
           label="Nombre(s)"
-          htmlFor="firstName"
-          error={errors.firstName?.message}
+          htmlFor="nombre"
+          error={errors.nombre?.message}
+        >
+          <Input id="nombre" disabled={submitting} {...register("nombre")} />
+        </Field>
+
+        <Field
+          label="Apellido paterno"
+          htmlFor="apellido_paterno"
+          error={errors.apellido_paterno?.message}
         >
           <Input
-            id="firstName"
+            id="apellido_paterno"
             disabled={submitting}
-            {...register("firstName")}
+            {...register("apellido_paterno")}
           />
         </Field>
 
         <Field
-          label="Apellido(s)"
-          htmlFor="lastName"
-          error={errors.lastName?.message}
+          label="Apellido materno"
+          htmlFor="apellido_materno"
+          error={errors.apellido_materno?.message}
         >
           <Input
-            id="lastName"
+            id="apellido_materno"
             disabled={submitting}
-            {...register("lastName")}
+            {...register("apellido_materno")}
+          />
+        </Field>
+
+        <Field
+          label="Cédula CNSF"
+          htmlFor="cedula"
+          error={errors.cedula?.message}
+        >
+          <Input
+            id="cedula"
+            placeholder="H377848"
+            autoCapitalize="characters"
+            disabled={submitting}
+            {...register("cedula")}
           />
         </Field>
 
@@ -78,17 +138,23 @@ export default function RegistroPage() {
           <Input
             id="email"
             type="email"
+            autoComplete="email"
             disabled={submitting}
             {...register("email")}
           />
         </Field>
 
-        <Field label="Teléfono" htmlFor="phone" error={errors.phone?.message}>
+        <Field
+          label="Teléfono"
+          htmlFor="telefono"
+          error={errors.telefono?.message}
+        >
           <Input
-            id="phone"
+            id="telefono"
             type="tel"
+            autoComplete="tel"
             disabled={submitting}
-            {...register("phone")}
+            {...register("telefono")}
           />
         </Field>
 
@@ -97,9 +163,8 @@ export default function RegistroPage() {
           htmlFor="password"
           error={errors.password?.message}
         >
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="new-password"
             disabled={submitting}
             {...register("password")}
@@ -107,16 +172,15 @@ export default function RegistroPage() {
         </Field>
 
         <Field
-          label="Confirmar"
-          htmlFor="confirmPassword"
-          error={errors.confirmPassword?.message}
+          label="Confirmar contraseña"
+          htmlFor="password_confirmation"
+          error={errors.password_confirmation?.message}
         >
-          <Input
-            id="confirmPassword"
-            type="password"
+          <PasswordInput
+            id="password_confirmation"
             autoComplete="new-password"
             disabled={submitting}
-            {...register("confirmPassword")}
+            {...register("password_confirmation")}
           />
         </Field>
       </div>

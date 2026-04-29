@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Field } from "@/components/forms/field";
 import { recoverSchema, type RecoverInput } from "@/lib/schemas/auth";
+import { brokerApi } from "@/lib/api/brokers";
 
 export default function RecuperarAccesoPage() {
   const router = useRouter();
@@ -25,10 +26,18 @@ export default function RecuperarAccesoPage() {
     defaultValues: { email: "" },
   });
 
-  const onSubmit = async (_values: RecoverInput) => {
+  const onSubmit = async (values: RecoverInput) => {
     setSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    toast.success("Si el correo existe, te enviaremos instrucciones.");
+    try {
+      await brokerApi.recuperarAcceso(values.email);
+    } catch {
+      // El endpoint es idempotente y siempre responde OK; un error aquí solo
+      // ocurre si el server está caído o el throttle se activó. En ambos casos
+      // mostramos el mismo mensaje neutral para no filtrar nada al usuario.
+    }
+    toast.success(
+      "Si tu correo está registrado, recibirás un enlace para restablecer tu contraseña.",
+    );
     router.push("/login");
   };
 

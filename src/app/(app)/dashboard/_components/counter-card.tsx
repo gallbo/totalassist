@@ -10,7 +10,7 @@ export function CounterCard({ value, label, className }: Props) {
   return (
     <div
       className={cn(
-        "flex min-w-[160px] items-center justify-between gap-3 rounded-full bg-blue-50 px-5 py-3",
+        "flex w-full items-center justify-between gap-3 rounded-full bg-blue-50 px-5 py-3 shadow-sm ring-1 ring-neutral-200 lg:w-auto lg:min-w-[160px]",
         className,
       )}
     >

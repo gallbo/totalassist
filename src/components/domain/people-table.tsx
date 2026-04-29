@@ -4,43 +4,64 @@ import { useState } from "react";
 import { Pencil, Plus, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { BrandButton } from "@/components/ui/brand-button";
-import type { Beneficiario } from "@/lib/mocks";
+
+export type PeopleRow = {
+  id: string;
+  nombre: string;
+  telefono: string;
+};
 
 type Props = {
   title: string;
-  initial?: Beneficiario[];
+  initial?: PeopleRow[];
+  value?: PeopleRow[];
+  onChange?: (rows: PeopleRow[]) => void;
+  disabled?: boolean;
 };
 
-export function PeopleTable({ title, initial = [] }: Props) {
-  const [rows, setRows] = useState<Beneficiario[]>(initial);
+export function PeopleTable({
+  title,
+  initial = [],
+  value,
+  onChange,
+  disabled = false,
+}: Props) {
+  const [internal, setInternal] = useState<PeopleRow[]>(initial);
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  const rows = value ?? internal;
+
+  const updateRows = (next: PeopleRow[]) => {
+    if (value === undefined) setInternal(next);
+    onChange?.(next);
+  };
+
   const addOrUpdate = () => {
     if (!nombre.trim() || !telefono.trim()) return;
     if (editingId) {
-      setRows((r) =>
-        r.map((row) =>
+      updateRows(
+        rows.map((row) =>
           row.id === editingId ? { ...row, nombre, telefono } : row,
         ),
       );
       setEditingId(null);
     } else {
-      setRows((r) => [...r, { id: `row-${Date.now()}`, nombre, telefono }]);
+      updateRows([...rows, { id: `row-${Date.now()}`, nombre, telefono }]);
     }
     setNombre("");
     setTelefono("");
   };
 
-  const edit = (row: Beneficiario) => {
+  const edit = (row: PeopleRow) => {
     setEditingId(row.id);
     setNombre(row.nombre);
     setTelefono(row.telefono);
   };
 
   const remove = (id: string) => {
-    setRows((r) => r.filter((row) => row.id !== id));
+    updateRows(rows.filter((row) => row.id !== id));
     if (editingId === id) {
       setEditingId(null);
       setNombre("");
@@ -55,16 +76,26 @@ export function PeopleTable({ title, initial = [] }: Props) {
       <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
         <label className="flex flex-col gap-1">
           <span className="text-xs text-neutral-600">Nombre</span>
-          <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
+          <Input
+            value={nombre}
+            disabled={disabled}
+            onChange={(e) => setNombre(e.target.value)}
+          />
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-xs text-neutral-600">Teléfono</span>
           <Input
             value={telefono}
+            disabled={disabled}
             onChange={(e) => setTelefono(e.target.value)}
           />
         </label>
-        <BrandButton type="button" onClick={addOrUpdate} className="h-11">
+        <BrandButton
+          type="button"
+          onClick={addOrUpdate}
+          className="h-11"
+          disabled={disabled}
+        >
           <Plus className="mr-1 h-4 w-4" />
           {editingId ? "Guardar" : "Agregar"}
         </BrandButton>
@@ -90,7 +121,8 @@ export function PeopleTable({ title, initial = [] }: Props) {
                 <button
                   type="button"
                   onClick={() => edit(row)}
-                  className="bg-brand-navy hover:bg-brand-navy-hover flex h-8 w-8 items-center justify-center rounded-full text-white"
+                  disabled={disabled}
+                  className="bg-brand-navy hover:bg-brand-navy-hover flex h-8 w-8 items-center justify-center rounded-full text-white disabled:opacity-50"
                   aria-label="Editar"
                 >
                   <Pencil className="h-3.5 w-3.5" />
@@ -98,7 +130,8 @@ export function PeopleTable({ title, initial = [] }: Props) {
                 <button
                   type="button"
                   onClick={() => remove(row.id)}
-                  className="bg-brand-navy hover:bg-brand-navy-hover flex h-8 w-8 items-center justify-center rounded-full text-white"
+                  disabled={disabled}
+                  className="bg-brand-navy hover:bg-brand-navy-hover flex h-8 w-8 items-center justify-center rounded-full text-white disabled:opacity-50"
                   aria-label="Eliminar"
                 >
                   <X className="h-4 w-4" />

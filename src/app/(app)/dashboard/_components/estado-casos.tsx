@@ -1,61 +1,75 @@
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
-import { estadoCasosTotales } from "@/lib/mocks";
+import type { DashboardData } from "@/lib/api/brokers";
+
+type Counts = DashboardData["casos_counts"];
 
 type Row = {
   label: string;
   value: number;
-  max: number;
   color: string;
   icon: typeof Clock;
 };
 
-const rows: Row[] = [
-  {
-    label: "En proceso",
-    value: estadoCasosTotales.enProceso,
-    max: 10,
-    color: "text-state-info",
-    icon: Clock,
-  },
-  {
-    label: "Interrumpido",
-    value: estadoCasosTotales.interrumpido,
-    max: 10,
-    color: "text-state-danger",
-    icon: XCircle,
-  },
-  {
-    label: "Indemnizado",
-    value: estadoCasosTotales.indemnizado,
-    max: 10,
-    color: "text-state-success",
-    icon: CheckCircle2,
-  },
-  {
-    label: "Finalizado",
-    value: estadoCasosTotales.finalizado,
-    max: 10,
-    color: "text-state-success",
-    icon: CheckCircle2,
-  },
-];
+export function EstadoCasos({ counts }: { counts: Counts }) {
+  const max = Math.max(
+    counts.en_proceso,
+    counts.interrumpido,
+    counts.indemnizado,
+    counts.finalizado,
+    1,
+  );
 
-export function EstadoCasos() {
+  const rows: Row[] = [
+    {
+      label: "En proceso",
+      value: counts.en_proceso,
+      color: "text-state-info",
+      icon: Clock,
+    },
+    {
+      label: "Interrumpido",
+      value: counts.interrumpido,
+      color: "text-state-danger",
+      icon: XCircle,
+    },
+    {
+      label: "Indemnizado",
+      value: counts.indemnizado,
+      color: "text-state-success",
+      icon: CheckCircle2,
+    },
+    {
+      label: "Finalizado",
+      value: counts.finalizado,
+      color: "text-state-success",
+      icon: CheckCircle2,
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-3">
-      {rows.map(({ label, value, max, color, icon: Icon }) => {
-        const pct = Math.min(100, (value / max) * 100);
+      {rows.map(({ label, value, color, icon: Icon }) => {
+        const pct = value > 0 ? (value / max) * 100 : 0;
+        const numeroDentro = value > 0;
         return (
           <div key={label} className="flex items-center gap-3">
             <div className="relative flex-1">
-              <div className="bg-brand-navy relative h-8 overflow-hidden rounded-md">
+              <div className="relative h-8 overflow-hidden rounded-md bg-blue-50">
                 <div
-                  className="bg-brand-navy h-full"
+                  className="bg-brand-navy flex h-full items-center justify-end transition-[width]"
                   style={{ width: `${pct}%` }}
-                />
-                <span className="absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-white tabular-nums">
-                  {value}
-                </span>
+                >
+                  {numeroDentro && (
+                    <span className="px-3 text-xs font-semibold text-white tabular-nums">
+                      {value}
+                    </span>
+                  )}
+                </div>
+                {!numeroDentro && (
+                  <span className="text-brand-navy absolute inset-y-0 right-3 flex items-center text-xs font-semibold tabular-nums">
+                    {value}
+                  </span>
+                )}
               </div>
             </div>
             <span
