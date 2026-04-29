@@ -23,8 +23,8 @@ type HeaderProps = {
 
 export function Header({ session }: HeaderProps) {
   const [open, setOpen] = useState(false);
-  const userName = session?.user?.name ?? "Usuario";
-  const agencyName = "Espinosa de los Monteros";
+  const userName = session?.user?.name ?? "Broker";
+  const userEmail = session?.user?.email ?? "";
 
   return (
     <header>
@@ -50,7 +50,7 @@ export function Header({ session }: HeaderProps) {
               Cerrar sesión
             </span>
           </button>
-          <AgencyBadge name={agencyName} />
+          <AgencyBadge name={userName} />
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
@@ -75,12 +75,16 @@ export function Header({ session }: HeaderProps) {
 
             <div className="flex flex-1 flex-col gap-6 px-4 py-4">
               <div className="flex items-center gap-3">
-                <AgencyBadge name={agencyName} />
+                <AgencyBadge name={userName} />
                 <div className="flex flex-col leading-tight">
                   <span className="text-brand-navy text-sm font-semibold">
                     {userName}
                   </span>
-                  <span className="text-xs text-neutral-500">{agencyName}</span>
+                  {userEmail ? (
+                    <span className="text-xs text-neutral-500">
+                      {userEmail}
+                    </span>
+                  ) : null}
                 </div>
               </div>
 
