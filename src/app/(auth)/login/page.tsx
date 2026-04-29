@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Separator } from "@/components/ui/separator";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Field } from "@/components/forms/field";
@@ -35,12 +36,15 @@ export default function LoginPage() {
     });
 
     if (result?.error) {
-      toast.error("No pudimos iniciar sesión. Verifica tus datos.");
+      const message =
+        result.error === "CredentialsSignin"
+          ? "Correo o contraseña incorrectos."
+          : "No pudimos iniciar sesión. Intenta de nuevo en un momento.";
+      toast.error(message);
       setSubmitting(false);
       return;
     }
 
-    toast.success("¡Bienvenido de vuelta!");
     router.push("/dashboard");
     router.refresh();
   };
@@ -70,10 +74,9 @@ export default function LoginPage() {
           htmlFor="password"
           error={errors.password?.message}
         >
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
-            autoComplete="new-password"
+            autoComplete="current-password"
             disabled={submitting}
             {...register("password")}
           />
