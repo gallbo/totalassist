@@ -9,13 +9,17 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { registroCasos } from "@/lib/mocks";
 
-export function RegistroCasosChart() {
+type Punto = { mes: string; anio: number; valor: number };
+
+export function RegistroCasosChart({ serie }: { serie: Punto[] }) {
+  const maxValor = Math.max(...serie.map((p) => p.valor), 4);
+  const ticksMaximo = Math.ceil(maxValor * 1.2);
+
   return (
     <ResponsiveContainer width="100%" height={260}>
       <AreaChart
-        data={registroCasos.serie}
+        data={serie}
         margin={{ top: 10, right: 12, left: 0, bottom: 0 }}
       >
         <defs>
@@ -35,8 +39,8 @@ export function RegistroCasosChart() {
           tick={{ fill: "#6b7280", fontSize: 11 }}
           tickLine={false}
           axisLine={false}
-          ticks={[0, 25, 50, 100, 150, 200, 250]}
-          domain={[0, 250]}
+          domain={[0, ticksMaximo]}
+          allowDecimals={false}
           width={32}
         />
         <Tooltip
