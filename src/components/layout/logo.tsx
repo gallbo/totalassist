@@ -42,10 +42,10 @@ export function Logo({ variant = "full", className, priority }: LogoProps) {
 
   return (
     <Image
-      src="/brand/totalassist-full.png"
-      alt="Total Assist — Insurance Claim"
-      width={444}
-      height={202}
+      src="/brand/totalassist-full-v3.png"
+      alt="Total Assist — Insurance Claim by Skipper"
+      width={914}
+      height={219}
       priority={priority}
       className={cn("h-16 w-auto", className)}
     />

@@ -12,10 +12,7 @@ export default function AuthLayout({
       <main className="relative flex flex-1 flex-col lg:flex-row">
         <aside className="relative hidden flex-1 items-center justify-center overflow-hidden px-8 py-12 lg:flex">
           <BackgroundPattern variant="auth" />
-          <Logo
-            variant="full"
-            className="relative z-10 h-24 w-auto scale-[1.75]"
-          />
+          <Logo variant="full" className="relative z-10 h-32 w-auto" />
         </aside>
 
         <section className="relative flex flex-1 items-center justify-center overflow-hidden px-4 py-10 sm:px-8 lg:py-16">
