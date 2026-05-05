@@ -24,10 +24,9 @@ import { borrarArchivoCasoAction, subirArchivoCasoAction } from "../_actions";
 const TAMANO_MAX = 10 * 1024 * 1024;
 
 const ESTATUS_LABELS: Record<number, string> = {
-  1: "En proceso",
-  2: "Indemnizado",
-  3: "Interrumpido",
-  4: "Finalizado",
+  0: "En proceso",
+  1: "Interrumpido",
+  3: "Finalizado",
 };
 
 export function CasoDetalleVista({ caso }: { caso: CasoDetalle }) {

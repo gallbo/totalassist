@@ -227,7 +227,6 @@ export type DashboardData = {
   };
   casos_counts: {
     en_proceso: number;
-    indemnizado: number;
     interrumpido: number;
     finalizado: number;
     total: number;
