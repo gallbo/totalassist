@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Button } from "@/components/ui/button";
+import { SelectPill } from "@/components/forms/select-pill";
 import { cn } from "@/lib/utils";
 import type {
   Aseguradora,
@@ -92,24 +93,12 @@ export function EditarCasoCliente({
   const contactos = useFieldArray({ control, name: "contactos_atencion" });
   const beneficiarios = useFieldArray({ control, name: "beneficiarios" });
 
-  const aseguradoraNombre =
-    aseguradoras.find((a) => a.id === caso.aseguradora_id)?.nombre ??
-    caso.aseguradora ??
-    "—";
-  const tipoSeguroNombre =
-    tiposSeguro.find((t) => t.id === caso.tipo_seguro_id)?.nombre ??
-    caso.tipo_seguro ??
-    "—";
-
   const onInvalid = () => {
     toast.error("Revisa los campos marcados antes de continuar.");
   };
 
   const onSubmit = (data: NuevoCasoSchema) => {
     startTransition(async () => {
-      // No mandamos correo, aseguradora_id ni tipo_seguro_id desde la UI:
-      // estos quedan locked en el form. El backend igual los aceptaría si
-      // se decidiera permitir editarlos en el futuro.
       const result = await actualizarCasoAction(caso.id, {
         tipo_persona: data.tipo_persona,
         nombre_asegurado: data.nombre_asegurado || null,
@@ -117,8 +106,11 @@ export function EditarCasoCliente({
         nombre_comercial: data.nombre_comercial || null,
         nombre_representante: data.nombre_representante || null,
         rfc: data.rfc || null,
+        correo: data.correo || null,
         telefono: data.telefono || null,
         celular: data.celular || null,
+        aseguradora_id: data.aseguradora_id,
+        tipo_seguro_id: data.tipo_seguro_id,
         tipo_siniestro_id: data.tipo_siniestro_id ?? null,
         num_siniestro_poliza: data.num_siniestro_poliza,
         folio_poliza: data.folio_poliza || null,
@@ -177,15 +169,59 @@ export function EditarCasoCliente({
       </div>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-brand-navy text-base font-bold">
-          {tipoPersona === "fisica" ? "Información personal" : "Información"}
-        </h2>
-
-        <CamposLocked
-          aseguradora={aseguradoraNombre}
-          tipoSeguro={tipoSeguroNombre}
-          correo={caso.correo}
-        />
+        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
+          <h2 className="text-brand-navy text-base font-bold md:pt-2">
+            {tipoPersona === "fisica" ? "Información personal" : "Información"}
+          </h2>
+          <div className="flex flex-wrap gap-3">
+            <Controller
+              control={control}
+              name="tipo_seguro_id"
+              render={({ field, fieldState }) => (
+                <div className="flex flex-col gap-1">
+                  <SelectPill
+                    label="Tipo de seguro *"
+                    options={tiposSeguro.map((t) => ({
+                      value: String(t.id),
+                      label: t.nombre,
+                    }))}
+                    value={field.value ? String(field.value) : ""}
+                    onChange={(v) => field.onChange(v ? Number(v) : null)}
+                    invalid={!!fieldState.error}
+                  />
+                  {fieldState.error && (
+                    <span className="text-xs text-red-600">
+                      {fieldState.error.message}
+                    </span>
+                  )}
+                </div>
+              )}
+            />
+            <Controller
+              control={control}
+              name="aseguradora_id"
+              render={({ field, fieldState }) => (
+                <div className="flex flex-col gap-1">
+                  <SelectPill
+                    label="Aseguradora *"
+                    options={aseguradoras.map((a) => ({
+                      value: String(a.id),
+                      label: a.nombre,
+                    }))}
+                    value={field.value ? String(field.value) : ""}
+                    onChange={(v) => field.onChange(v ? Number(v) : null)}
+                    invalid={!!fieldState.error}
+                  />
+                  {fieldState.error && (
+                    <span className="text-xs text-red-600">
+                      {fieldState.error.message}
+                    </span>
+                  )}
+                </div>
+              )}
+            />
+          </div>
+        </div>
 
         {tipoPersona === "fisica" ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -197,6 +233,9 @@ export function EditarCasoCliente({
             </Field>
             <Field label="RFC">
               <Input {...register("rfc")} />
+            </Field>
+            <Field label="Correo" error={errors.correo?.message}>
+              <Input type="email" {...register("correo")} />
             </Field>
             <Field label="Teléfono">
               <Input type="tel" {...register("telefono")} />
@@ -224,9 +263,14 @@ export function EditarCasoCliente({
             <Field label="Nombre">
               <Input {...register("nombre_representante")} />
             </Field>
-            <Field label="Teléfono">
-              <Input type="tel" {...register("telefono")} />
-            </Field>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field label="Correo" error={errors.correo?.message}>
+                <Input type="email" {...register("correo")} />
+              </Field>
+              <Field label="Teléfono">
+                <Input type="tel" {...register("telefono")} />
+              </Field>
+            </div>
           </>
         )}
       </section>
@@ -439,41 +483,5 @@ function Field({
       {children}
       {error && <span className="text-xs text-red-600">{error}</span>}
     </label>
-  );
-}
-
-function CamposLocked({
-  aseguradora,
-  tipoSeguro,
-  correo,
-}: {
-  aseguradora: string;
-  tipoSeguro: string;
-  correo: string | null;
-}) {
-  return (
-    <div className="grid grid-cols-1 gap-3 rounded-lg bg-blue-50/40 p-4 md:grid-cols-3">
-      <Locked label="Aseguradora" value={aseguradora} />
-      <Locked label="Tipo de seguro" value={tipoSeguro} />
-      <Locked label="Correo" value={correo ?? "—"} />
-      <p className="text-xs text-neutral-500 md:col-span-3">
-        Estos datos no se pueden cambiar desde aquí. Si necesitas modificarlos,
-        contáctanos.
-      </p>
-    </div>
-  );
-}
-
-function Locked({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="flex items-center gap-1 text-xs text-neutral-600">
-        <Lock className="h-3 w-3" />
-        {label}
-      </span>
-      <div className="text-brand-navy truncate rounded-md bg-white px-3 py-2 text-sm ring-1 ring-neutral-200">
-        {value}
-      </div>
-    </div>
   );
 }
