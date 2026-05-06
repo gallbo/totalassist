@@ -36,54 +36,86 @@ import {
 
 const filledInput = "border-brand-navy/30 bg-transparent";
 
-const perfilSchema = z.object({
-  nombre: z.string().trim().min(2, "Ingresa tu nombre"),
-  apellido_paterno: z.string().trim().min(2, "Ingresa tu apellido paterno"),
-  apellido_materno: z
-    .string()
-    .trim()
-    .max(150, "Apellido materno demasiado largo")
-    .optional()
-    .or(z.literal("")),
-  telefono: z
-    .string()
-    .trim()
-    .min(8, "Ingresa un teléfono válido")
-    .regex(/^[0-9+\-\s()]+$/, "Solo números y símbolos de teléfono"),
-  rfc: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .max(20, "Máximo 20 caracteres")
-    .optional()
-    .or(z.literal("")),
-  domicilio: z
-    .string()
-    .trim()
-    .max(255, "Máximo 255 caracteres")
-    .optional()
-    .or(z.literal("")),
-  estado: z
-    .string()
-    .trim()
-    .max(100, "Máximo 100 caracteres")
-    .optional()
-    .or(z.literal("")),
-  ciudad: z
-    .string()
-    .trim()
-    .max(100, "Máximo 100 caracteres")
-    .optional()
-    .or(z.literal("")),
-  codigo_postal: z
-    .string()
-    .trim()
-    .optional()
-    .or(z.literal(""))
-    .refine((v) => !v || /^\d{5}$/.test(v), {
-      message: "El código postal debe tener 5 dígitos",
-    }),
-});
+const perfilSchema = z
+  .object({
+    nombre: z.string().trim().min(2, "Ingresa tu nombre"),
+    apellido_paterno: z.string().trim().min(2, "Ingresa tu apellido paterno"),
+    apellido_materno: z
+      .string()
+      .trim()
+      .max(150, "Apellido materno demasiado largo")
+      .optional()
+      .or(z.literal("")),
+    telefono: z
+      .string()
+      .trim()
+      .min(8, "Ingresa un teléfono válido")
+      .regex(/^[0-9+\-\s()]+$/, "Solo números y símbolos de teléfono"),
+    rfc: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .max(20, "Máximo 20 caracteres")
+      .optional()
+      .or(z.literal("")),
+    domicilio: z
+      .string()
+      .trim()
+      .max(255, "Máximo 255 caracteres")
+      .optional()
+      .or(z.literal("")),
+    estado: z
+      .string()
+      .trim()
+      .max(100, "Máximo 100 caracteres")
+      .optional()
+      .or(z.literal("")),
+    ciudad: z
+      .string()
+      .trim()
+      .max(100, "Máximo 100 caracteres")
+      .optional()
+      .or(z.literal("")),
+    codigo_postal: z
+      .string()
+      .trim()
+      .optional()
+      .or(z.literal(""))
+      .refine((v) => !v || /^\d{5}$/.test(v), {
+        message: "El código postal debe tener 5 dígitos",
+      }),
+  })
+  .superRefine((data, ctx) => {
+    // La direccion es opcional pero atomica: o todos los campos llenos, o
+    // todos vacios. Si el broker captura uno solo, los otros se vuelven
+    // requeridos para que no quede una direccion a medias.
+    const campos: Array<"domicilio" | "estado" | "ciudad" | "codigo_postal"> = [
+      "domicilio",
+      "estado",
+      "ciudad",
+      "codigo_postal",
+    ];
+    const valores = campos.map((c) => (data[c] ?? "").toString().trim());
+    const algunoCargado = valores.some((v) => v.length > 0);
+    if (!algunoCargado) return;
+
+    const mensajes: Record<(typeof campos)[number], string> = {
+      domicilio: "Captura tu domicilio.",
+      estado: "Captura tu estado.",
+      ciudad: "Captura tu ciudad.",
+      codigo_postal: "Captura tu código postal.",
+    };
+
+    campos.forEach((campo, i) => {
+      if (valores[i]!.length === 0) {
+        ctx.addIssue({
+          code: "custom",
+          path: [campo],
+          message: mensajes[campo],
+        });
+      }
+    });
+  });
 
 type PerfilInput = z.infer<typeof perfilSchema>;
 
@@ -292,6 +324,23 @@ export function PerfilCliente({ initial }: Props) {
     });
   });
 
+  const direccionCampos = perfilForm.watch([
+    "domicilio",
+    "estado",
+    "ciudad",
+    "codigo_postal",
+  ]);
+  const direccionTieneContenido = direccionCampos.some(
+    (v) => (v ?? "").toString().trim().length > 0,
+  );
+
+  const limpiarDireccion = () => {
+    (["domicilio", "estado", "ciudad", "codigo_postal"] as const).forEach(
+      (campo) => perfilForm.setValue(campo, "", { shouldDirty: true }),
+    );
+    perfilForm.clearErrors(["domicilio", "estado", "ciudad", "codigo_postal"]);
+  };
+
   const onLogoSelected = (file: File) => {
     if (!file.type.startsWith("image/")) {
       toast.error("El logo debe ser una imagen (PNG, JPG o similar).");
@@ -491,7 +540,20 @@ export function PerfilCliente({ initial }: Props) {
         </div>
 
         <section className="flex flex-col gap-4 border-t border-neutral-200 pt-6">
-          <h2 className="text-brand-navy text-base font-bold">Dirección</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-brand-navy text-base font-bold">Dirección</h2>
+            {direccionTieneContenido && (
+              <button
+                type="button"
+                onClick={limpiarDireccion}
+                disabled={submittingPerfil}
+                className="text-state-danger inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold hover:bg-red-50 disabled:opacity-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Borrar dirección
+              </button>
+            )}
+          </div>
           <Field
             label="Domicilio"
             htmlFor="domicilio"
