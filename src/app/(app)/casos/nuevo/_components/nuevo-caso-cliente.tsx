@@ -319,16 +319,13 @@ export function NuevoCasoCliente({
             label="Número de siniestro *"
             error={errors.num_siniestro_poliza?.message}
           >
-            <Input
-              placeholder="SIN-2026-0001"
-              {...register("num_siniestro_poliza")}
-            />
+            <Input {...register("num_siniestro_poliza")} />
           </Field>
           <Field
             label="Folio de la póliza"
             error={errors.folio_poliza?.message}
           >
-            <Input placeholder="POL-2026-0001" {...register("folio_poliza")} />
+            <Input {...register("folio_poliza")} />
           </Field>
           <Field label="Fecha del siniestro">
             <Input type="date" {...register("fecha_siniestro")} />

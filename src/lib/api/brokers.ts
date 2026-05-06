@@ -407,6 +407,16 @@ export const brokerApi = {
     return (await res.json()) as PerfilBroker;
   },
 
+  eliminarLogo(token: string) {
+    return request<PerfilBroker>(
+      {
+        method: "DELETE",
+        url: "/api/brokers/perfil/logo",
+      },
+      token,
+    );
+  },
+
   logout(token: string) {
     return request<MensajeResponse>(
       { method: "POST", url: "/api/brokers/logout" },

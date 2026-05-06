@@ -1,7 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Globe, Pencil, Plus, X, type LucideIcon } from "lucide-react";
+import type { ComponentType, SVGProps } from "react";
+import { Pencil, Plus, X } from "lucide-react";
+import {
+  FaFacebookF,
+  FaGlobe,
+  FaInstagram,
+  FaLinkedinIn,
+  FaTiktok,
+  FaWhatsapp,
+  FaXTwitter,
+  FaYoutube,
+} from "react-icons/fa6";
 import { Input } from "@/components/ui/input";
 import { BrandButton } from "@/components/ui/brand-button";
 import {
@@ -15,22 +26,69 @@ export type RedSocialRow = {
   usuario: string;
 };
 
-// lucide-react v1 ya no incluye iconos de marca; usamos `Globe` como icono
-// generico y el label desambigua. Si en el futuro se agrega una libreria con
-// brand icons (react-icons o simple-icons), se puede swapear el `icon` aqui.
+type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
+
+// Iconos de marca via `react-icons/fa6` (Font Awesome 6 brands). Cada icono
+// trae el color oficial declarado abajo para que la tabla se lea de un
+// vistazo sin depender de otras pistas visuales.
 export const REDES_SOCIALES_META: Record<
   RedSocialCodigo,
-  { label: string; icon: LucideIcon; placeholder: string }
+  { label: string; icon: IconComponent; color: string; placeholder: string }
 > = {
-  facebook: { label: "Facebook", icon: Globe, placeholder: "@miempresa o URL" },
-  instagram: { label: "Instagram", icon: Globe, placeholder: "@miempresa" },
-  linkedin: { label: "LinkedIn", icon: Globe, placeholder: "URL del perfil" },
-  x: { label: "X (Twitter)", icon: Globe, placeholder: "@miempresa" },
-  tiktok: { label: "TikTok", icon: Globe, placeholder: "@miempresa" },
-  youtube: { label: "YouTube", icon: Globe, placeholder: "@micanal o URL" },
-  whatsapp: { label: "WhatsApp", icon: Globe, placeholder: "+52 55 1234 5678" },
-  sitio_web: { label: "Sitio web", icon: Globe, placeholder: "https://..." },
-  otra: { label: "Otra", icon: Globe, placeholder: "Usuario o URL" },
+  facebook: {
+    label: "Facebook",
+    icon: FaFacebookF,
+    color: "#1877F2",
+    placeholder: "@miempresa o URL",
+  },
+  instagram: {
+    label: "Instagram",
+    icon: FaInstagram,
+    color: "#E1306C",
+    placeholder: "@miempresa",
+  },
+  linkedin: {
+    label: "LinkedIn",
+    icon: FaLinkedinIn,
+    color: "#0A66C2",
+    placeholder: "URL del perfil",
+  },
+  x: {
+    label: "X (Twitter)",
+    icon: FaXTwitter,
+    color: "#0F172A",
+    placeholder: "@miempresa",
+  },
+  tiktok: {
+    label: "TikTok",
+    icon: FaTiktok,
+    color: "#0F172A",
+    placeholder: "@miempresa",
+  },
+  youtube: {
+    label: "YouTube",
+    icon: FaYoutube,
+    color: "#FF0000",
+    placeholder: "@micanal o URL",
+  },
+  whatsapp: {
+    label: "WhatsApp",
+    icon: FaWhatsapp,
+    color: "#25D366",
+    placeholder: "+52 55 1234 5678",
+  },
+  sitio_web: {
+    label: "Sitio web",
+    icon: FaGlobe,
+    color: "#64748B",
+    placeholder: "https://...",
+  },
+  otra: {
+    label: "Otra",
+    icon: FaGlobe,
+    color: "#64748B",
+    placeholder: "Usuario o URL",
+  },
 };
 
 type Props = {
@@ -150,7 +208,8 @@ export function RedesSocialesTable({
             <div className="w-24" />
           </div>
           {rows.map((row, i) => {
-            const Icon = REDES_SOCIALES_META[row.red_social].icon;
+            const meta = REDES_SOCIALES_META[row.red_social];
+            const Icon = meta.icon;
             return (
               <div
                 key={row.id}
@@ -159,8 +218,12 @@ export function RedesSocialesTable({
                 }`}
               >
                 <div className="text-brand-navy flex items-center gap-2">
-                  <Icon className="h-4 w-4" />
-                  {REDES_SOCIALES_META[row.red_social].label}
+                  <Icon
+                    className="h-4 w-4 shrink-0"
+                    style={{ color: meta.color }}
+                    aria-hidden
+                  />
+                  {meta.label}
                 </div>
                 <div className="break-all text-neutral-600">{row.usuario}</div>
                 <div className="flex items-center gap-2">

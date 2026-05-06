@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import Image from "next/image";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -30,6 +30,7 @@ import type {
 import {
   actualizarPerfilAction,
   cambiarPasswordAction,
+  eliminarLogoAction,
   subirLogoAction,
 } from "../_actions";
 
@@ -56,13 +57,32 @@ const perfilSchema = z.object({
     .max(20, "Máximo 20 caracteres")
     .optional()
     .or(z.literal("")),
-  domicilio: z.string().trim().min(3, "Ingresa tu domicilio"),
-  estado: z.string().trim().min(2, "Ingresa tu estado"),
-  ciudad: z.string().trim().min(2, "Ingresa tu ciudad"),
+  domicilio: z
+    .string()
+    .trim()
+    .max(255, "Máximo 255 caracteres")
+    .optional()
+    .or(z.literal("")),
+  estado: z
+    .string()
+    .trim()
+    .max(100, "Máximo 100 caracteres")
+    .optional()
+    .or(z.literal("")),
+  ciudad: z
+    .string()
+    .trim()
+    .max(100, "Máximo 100 caracteres")
+    .optional()
+    .or(z.literal("")),
   codigo_postal: z
     .string()
     .trim()
-    .regex(/^\d{5}$/, "El código postal debe tener 5 dígitos"),
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => !v || /^\d{5}$/.test(v), {
+      message: "El código postal debe tener 5 dígitos",
+    }),
 });
 
 type PerfilInput = z.infer<typeof perfilSchema>;
@@ -211,14 +231,22 @@ export function PerfilCliente({ initial }: Props) {
 
   const submitPerfil = perfilForm.handleSubmit((values) => {
     startPerfilTransition(async () => {
-      const direccionPayload: DireccionBroker = {
-        ...(direccion?.id ? { id: direccion.id } : {}),
-        domicilio: values.domicilio,
-        estado: values.estado,
-        ciudad: values.ciudad,
-        codigo_postal: values.codigo_postal,
-        principal: true,
-      };
+      // La direccion es opcional: si el broker no captura nada, mandamos
+      // array vacio (replace por bloque borra la existente). Si captura al
+      // menos `domicilio`, mandamos el bloque completo.
+      const tieneDireccion = !!values.domicilio?.trim();
+      const direccionesPayload: DireccionBroker[] = tieneDireccion
+        ? [
+            {
+              ...(direccion?.id ? { id: direccion.id } : {}),
+              domicilio: values.domicilio!.trim(),
+              estado: values.estado?.trim() ?? "",
+              ciudad: values.ciudad?.trim() ?? "",
+              codigo_postal: values.codigo_postal?.trim() ?? "",
+              principal: true,
+            },
+          ]
+        : [];
 
       const result = await actualizarPerfilAction({
         nombre: values.nombre,
@@ -226,7 +254,7 @@ export function PerfilCliente({ initial }: Props) {
         apellido_materno: values.apellido_materno || null,
         telefono: values.telefono,
         rfc: values.rfc?.trim() || null,
-        direcciones: [direccionPayload],
+        direcciones: direccionesPayload,
         contactos_atencion: rowsToContactos(contactos),
         promotorias: rowsToPromotorias(promotorias),
         redes_sociales: rowsToRedes(redesSociales),
@@ -291,6 +319,24 @@ export function PerfilCliente({ initial }: Props) {
 
   const triggerFilePicker = () => fileInputRef.current?.click();
 
+  const onEliminarLogo = () => {
+    if (!logoUrl) return;
+    const ok = window.confirm(
+      "¿Eliminar tu logo? Podrás subir uno nuevo después.",
+    );
+    if (!ok) return;
+    startLogoTransition(async () => {
+      const result = await eliminarLogoAction();
+      if (result.ok) {
+        setPerfil(result.data);
+        setLogoUrl(result.data.logo_url ?? null);
+        toast.success("Logo eliminado.");
+      } else {
+        toast.error(result.message);
+      }
+    });
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-brand-navy text-xl font-bold">Mi perfil</h1>
@@ -326,6 +372,18 @@ export function PerfilCliente({ initial }: Props) {
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
+              {logoUrl && (
+                <button
+                  type="button"
+                  onClick={onEliminarLogo}
+                  disabled={submittingLogo}
+                  className="text-state-danger flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-50"
+                  aria-label="Eliminar logo"
+                  title="Eliminar logo"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
             <input
               ref={fileInputRef}
@@ -425,7 +483,6 @@ export function PerfilCliente({ initial }: Props) {
                   id="rfc"
                   className={filledInput}
                   disabled={submittingPerfil}
-                  placeholder="VECJ880326XXX"
                   {...perfilForm.register("rfc")}
                 />
               </Field>

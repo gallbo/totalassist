@@ -74,3 +74,14 @@ export async function subirLogoAction(
   }
   return result;
 }
+
+export async function eliminarLogoAction(): Promise<
+  ActionResult<PerfilBroker>
+> {
+  const result = await withToken((t) => brokerApi.eliminarLogo(t));
+  if (result.ok) {
+    revalidatePath("/perfil");
+    updateTag("broker-me");
+  }
+  return result;
+}
