@@ -28,6 +28,8 @@ const VACIO: PromotoriaRow = {
   telefono_promotor: "",
 };
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function PromotoriasTable({
   title,
   value,
@@ -37,6 +39,11 @@ export function PromotoriasTable({
   const [internal, setInternal] = useState<PromotoriaRow[]>([]);
   const [draft, setDraft] = useState<PromotoriaRow>({ ...VACIO });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [errores, setErrores] = useState<{
+    nombre_promotor?: string;
+    nombre_promotoria?: string;
+    correo_promotor?: string;
+  }>({});
 
   const rows = value ?? internal;
 
@@ -46,18 +53,39 @@ export function PromotoriasTable({
   };
 
   const addOrUpdate = () => {
-    if (!draft.nombre_promotor.trim() || !draft.nombre_promotoria.trim()) {
+    const next: typeof errores = {};
+    if (!draft.nombre_promotor.trim()) {
+      next.nombre_promotor = "Captura el nombre del promotor.";
+    }
+    if (!draft.nombre_promotoria.trim()) {
+      next.nombre_promotoria = "Captura el nombre de la promotoría.";
+    }
+    const correo = draft.correo_promotor.trim();
+    if (correo && !EMAIL_RE.test(correo)) {
+      next.correo_promotor = "El correo no tiene un formato válido.";
+    }
+    setErrores(next);
+    if (Object.keys(next).length > 0) {
       return;
     }
+
+    const limpio: PromotoriaRow = {
+      ...draft,
+      nombre_promotor: draft.nombre_promotor.trim(),
+      nombre_promotoria: draft.nombre_promotoria.trim(),
+      correo_promotor: correo,
+      telefono_promotor: draft.telefono_promotor.trim(),
+    };
+
     if (editingId) {
       updateRows(
         rows.map((row) =>
-          row.id === editingId ? { ...draft, id: editingId } : row,
+          row.id === editingId ? { ...limpio, id: editingId } : row,
         ),
       );
       setEditingId(null);
     } else {
-      updateRows([...rows, { ...draft, id: `row-${Date.now()}` }]);
+      updateRows([...rows, { ...limpio, id: `row-${Date.now()}` }]);
     }
     setDraft({ ...VACIO });
   };
@@ -65,6 +93,7 @@ export function PromotoriasTable({
   const edit = (row: PromotoriaRow) => {
     setEditingId(row.id);
     setDraft(row);
+    setErrores({});
   };
 
   const remove = (id: string) => {
@@ -72,6 +101,7 @@ export function PromotoriasTable({
     if (editingId === id) {
       setEditingId(null);
       setDraft({ ...VACIO });
+      setErrores({});
     }
   };
 
@@ -89,6 +119,11 @@ export function PromotoriasTable({
               setDraft({ ...draft, nombre_promotor: e.target.value })
             }
           />
+          {errores.nombre_promotor && (
+            <span className="text-state-danger text-xs">
+              {errores.nombre_promotor}
+            </span>
+          )}
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-xs text-neutral-600">
@@ -101,6 +136,11 @@ export function PromotoriasTable({
               setDraft({ ...draft, nombre_promotoria: e.target.value })
             }
           />
+          {errores.nombre_promotoria && (
+            <span className="text-state-danger text-xs">
+              {errores.nombre_promotoria}
+            </span>
+          )}
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-xs text-neutral-600">Correo del promotor</span>
@@ -112,6 +152,11 @@ export function PromotoriasTable({
               setDraft({ ...draft, correo_promotor: e.target.value })
             }
           />
+          {errores.correo_promotor && (
+            <span className="text-state-danger text-xs">
+              {errores.correo_promotor}
+            </span>
+          )}
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-xs text-neutral-600">

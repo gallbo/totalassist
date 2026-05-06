@@ -30,7 +30,19 @@ async function withToken<T>(
     return { ok: true, data };
   } catch (error) {
     if (error instanceof ApiError) {
-      return { ok: false, message: error.message, code: error.code };
+      // En errores de validacion, el mensaje generico ("Algunos datos no son
+      // validos") no le dice al broker que corregir. Si vienen errores por
+      // campo, exponemos el primero — los Form Requests ya devuelven mensajes
+      // amigables en espanol.
+      const primerErrorDeCampo =
+        error.code === "validacion" && error.fieldErrors
+          ? Object.values(error.fieldErrors)[0]?.[0]
+          : undefined;
+      return {
+        ok: false,
+        message: primerErrorDeCampo ?? error.message,
+        code: error.code,
+      };
     }
     return {
       ok: false,
