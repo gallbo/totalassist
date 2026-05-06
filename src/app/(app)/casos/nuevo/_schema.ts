@@ -32,6 +32,11 @@ export const nuevoCasoSchema = z
       .int()
       .positive("Selecciona un tipo de seguro."),
     tipo_siniestro_id: z.coerce.number().int().positive().nullish(),
+    num_siniestro_poliza: z
+      .string()
+      .trim()
+      .min(1, "Captura el número de siniestro.")
+      .max(255, "Máximo 255 caracteres."),
     folio_poliza: z.string().max(100, "Máximo 100 caracteres.").nullish(),
     fecha_siniestro: z.string().nullish(),
     monto_estimado: z.coerce.number().min(0).nullish(),

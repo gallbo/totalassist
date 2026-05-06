@@ -111,7 +111,7 @@ export function CasoDetalleVista({ caso }: { caso: CasoDetalle }) {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-brand-navy text-base font-bold">
-          Información del asegurado
+          Información general
         </h2>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {caso.tipo_persona === "fisica" ? (

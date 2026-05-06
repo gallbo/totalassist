@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import Image from "next/image";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,41 +12,110 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Field } from "@/components/forms/field";
 import { PeopleTable, type PeopleRow } from "@/components/domain/people-table";
+import {
+  PromotoriasTable,
+  type PromotoriaRow,
+} from "@/components/domain/promotorias-table";
+import {
+  RedesSocialesTable,
+  type RedSocialRow,
+} from "@/components/domain/redes-sociales-table";
 import type {
   ContactoAtencion,
   DireccionBroker,
   PerfilBroker,
+  Promotoria,
+  RedSocial,
 } from "@/lib/api/brokers";
 import {
   actualizarPerfilAction,
   cambiarPasswordAction,
+  eliminarLogoAction,
   subirLogoAction,
 } from "../_actions";
 
 const filledInput = "border-brand-navy/30 bg-transparent";
 
-const perfilSchema = z.object({
-  nombre: z.string().trim().min(2, "Ingresa tu nombre"),
-  apellido_paterno: z.string().trim().min(2, "Ingresa tu apellido paterno"),
-  apellido_materno: z
-    .string()
-    .trim()
-    .max(150, "Apellido materno demasiado largo")
-    .optional()
-    .or(z.literal("")),
-  telefono: z
-    .string()
-    .trim()
-    .min(8, "Ingresa un teléfono válido")
-    .regex(/^[0-9+\-\s()]+$/, "Solo números y símbolos de teléfono"),
-  domicilio: z.string().trim().min(3, "Ingresa tu domicilio"),
-  estado: z.string().trim().min(2, "Ingresa tu estado"),
-  ciudad: z.string().trim().min(2, "Ingresa tu ciudad"),
-  codigo_postal: z
-    .string()
-    .trim()
-    .regex(/^\d{5}$/, "El código postal debe tener 5 dígitos"),
-});
+const perfilSchema = z
+  .object({
+    nombre: z.string().trim().min(2, "Ingresa tu nombre"),
+    apellido_paterno: z.string().trim().min(2, "Ingresa tu apellido paterno"),
+    apellido_materno: z
+      .string()
+      .trim()
+      .max(150, "Apellido materno demasiado largo")
+      .optional()
+      .or(z.literal("")),
+    telefono: z
+      .string()
+      .trim()
+      .min(8, "Ingresa un teléfono válido")
+      .regex(/^[0-9+\-\s()]+$/, "Solo números y símbolos de teléfono"),
+    rfc: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .max(20, "Máximo 20 caracteres")
+      .optional()
+      .or(z.literal("")),
+    domicilio: z
+      .string()
+      .trim()
+      .max(255, "Máximo 255 caracteres")
+      .optional()
+      .or(z.literal("")),
+    estado: z
+      .string()
+      .trim()
+      .max(100, "Máximo 100 caracteres")
+      .optional()
+      .or(z.literal("")),
+    ciudad: z
+      .string()
+      .trim()
+      .max(100, "Máximo 100 caracteres")
+      .optional()
+      .or(z.literal("")),
+    codigo_postal: z
+      .string()
+      .trim()
+      .optional()
+      .or(z.literal(""))
+      .refine((v) => !v || /^\d{5}$/.test(v), {
+        message: "El código postal debe tener 5 dígitos",
+      }),
+  })
+  .superRefine((data, ctx) => {
+    // La direccion es opcional pero atomica: o todos los campos llenos, o
+    // todos vacios. Si el broker captura uno solo, los otros se vuelven
+    // requeridos para que no quede una direccion a medias.
+    const campos: Array<"domicilio" | "estado" | "ciudad" | "codigo_postal"> = [
+      "domicilio",
+      "estado",
+      "ciudad",
+      "codigo_postal",
+    ];
+    const valores = campos.map((c) => (data[c] ?? "").toString().trim());
+    const algunoCargado = valores.some((v) => v.length > 0);
+    if (!algunoCargado) return;
+
+    const mensajes: Record<(typeof campos)[number], string> = {
+      domicilio: "Captura tu domicilio.",
+      estado: "Captura tu estado.",
+      ciudad: "Captura tu ciudad.",
+      codigo_postal: "Captura tu código postal.",
+    };
+
+    campos.forEach((campo, i) => {
+      if (valores[i]!.length === 0) {
+        ctx.addIssue({
+          code: "custom",
+          path: [campo],
+          message: mensajes[campo],
+        });
+      }
+    });
+  });
 
 type PerfilInput = z.infer<typeof perfilSchema>;
 
@@ -101,12 +170,62 @@ function rowsToContactos(rows: PeopleRow[]): ContactoAtencion[] {
   });
 }
 
+function promotoriasToRows(promotorias: Promotoria[]): PromotoriaRow[] {
+  return promotorias.map((p, i) => ({
+    id: p.id ? String(p.id) : `existente-${i}`,
+    nombre_promotor: p.nombre_promotor,
+    nombre_promotoria: p.nombre_promotoria,
+    correo_promotor: p.correo_promotor ?? "",
+    telefono_promotor: p.telefono_promotor ?? "",
+  }));
+}
+
+function rowsToPromotorias(rows: PromotoriaRow[]): Promotoria[] {
+  return rows.map((r) => {
+    const numericId = Number(r.id);
+    const out: Promotoria = {
+      nombre_promotor: r.nombre_promotor,
+      nombre_promotoria: r.nombre_promotoria,
+      correo_promotor: r.correo_promotor.trim() || null,
+      telefono_promotor: r.telefono_promotor.trim() || null,
+    };
+    if (Number.isInteger(numericId) && numericId > 0) out.id = numericId;
+    return out;
+  });
+}
+
+function redesToRows(redes: RedSocial[]): RedSocialRow[] {
+  return redes.map((r, i) => ({
+    id: r.id ? String(r.id) : `existente-${i}`,
+    red_social: r.red_social,
+    usuario: r.usuario,
+  }));
+}
+
+function rowsToRedes(rows: RedSocialRow[]): RedSocial[] {
+  return rows.map((r) => {
+    const numericId = Number(r.id);
+    const out: RedSocial = {
+      red_social: r.red_social,
+      usuario: r.usuario,
+    };
+    if (Number.isInteger(numericId) && numericId > 0) out.id = numericId;
+    return out;
+  });
+}
+
 type Props = { initial: PerfilBroker };
 
 export function PerfilCliente({ initial }: Props) {
   const [perfil, setPerfil] = useState<PerfilBroker>(initial);
   const [contactos, setContactos] = useState<PeopleRow[]>(
     contactosToRows(initial.contactos_atencion),
+  );
+  const [promotorias, setPromotorias] = useState<PromotoriaRow[]>(
+    promotoriasToRows(initial.promotorias),
+  );
+  const [redesSociales, setRedesSociales] = useState<RedSocialRow[]>(
+    redesToRows(initial.redes_sociales),
   );
   const [logoUrl, setLogoUrl] = useState<string | null>(
     initial.logo_url ?? null,
@@ -125,6 +244,7 @@ export function PerfilCliente({ initial }: Props) {
       apellido_paterno: perfil.apellido_paterno,
       apellido_materno: perfil.apellido_materno ?? "",
       telefono: perfil.telefono ?? "",
+      rfc: perfil.rfc ?? "",
       domicilio: direccion?.domicilio ?? "",
       estado: direccion?.estado ?? "",
       ciudad: direccion?.ciudad ?? "",
@@ -143,27 +263,40 @@ export function PerfilCliente({ initial }: Props) {
 
   const submitPerfil = perfilForm.handleSubmit((values) => {
     startPerfilTransition(async () => {
-      const direccionPayload: DireccionBroker = {
-        ...(direccion?.id ? { id: direccion.id } : {}),
-        domicilio: values.domicilio,
-        estado: values.estado,
-        ciudad: values.ciudad,
-        codigo_postal: values.codigo_postal,
-        principal: true,
-      };
+      // La direccion es opcional: si el broker no captura nada, mandamos
+      // array vacio (replace por bloque borra la existente). Si captura al
+      // menos `domicilio`, mandamos el bloque completo.
+      const tieneDireccion = !!values.domicilio?.trim();
+      const direccionesPayload: DireccionBroker[] = tieneDireccion
+        ? [
+            {
+              ...(direccion?.id ? { id: direccion.id } : {}),
+              domicilio: values.domicilio!.trim(),
+              estado: values.estado?.trim() ?? "",
+              ciudad: values.ciudad?.trim() ?? "",
+              codigo_postal: values.codigo_postal?.trim() ?? "",
+              principal: true,
+            },
+          ]
+        : [];
 
       const result = await actualizarPerfilAction({
         nombre: values.nombre,
         apellido_paterno: values.apellido_paterno,
         apellido_materno: values.apellido_materno || null,
         telefono: values.telefono,
-        direcciones: [direccionPayload],
+        rfc: values.rfc?.trim() || null,
+        direcciones: direccionesPayload,
         contactos_atencion: rowsToContactos(contactos),
+        promotorias: rowsToPromotorias(promotorias),
+        redes_sociales: rowsToRedes(redesSociales),
       });
 
       if (result.ok) {
         setPerfil(result.data);
         setContactos(contactosToRows(result.data.contactos_atencion));
+        setPromotorias(promotoriasToRows(result.data.promotorias));
+        setRedesSociales(redesToRows(result.data.redes_sociales));
         setLogoUrl(result.data.logo_url ?? null);
         toast.success("Perfil actualizado.");
       } else {
@@ -191,6 +324,23 @@ export function PerfilCliente({ initial }: Props) {
     });
   });
 
+  const direccionCampos = perfilForm.watch([
+    "domicilio",
+    "estado",
+    "ciudad",
+    "codigo_postal",
+  ]);
+  const direccionTieneContenido = direccionCampos.some(
+    (v) => (v ?? "").toString().trim().length > 0,
+  );
+
+  const limpiarDireccion = () => {
+    (["domicilio", "estado", "ciudad", "codigo_postal"] as const).forEach(
+      (campo) => perfilForm.setValue(campo, "", { shouldDirty: true }),
+    );
+    perfilForm.clearErrors(["domicilio", "estado", "ciudad", "codigo_postal"]);
+  };
+
   const onLogoSelected = (file: File) => {
     if (!file.type.startsWith("image/")) {
       toast.error("El logo debe ser una imagen (PNG, JPG o similar).");
@@ -217,6 +367,24 @@ export function PerfilCliente({ initial }: Props) {
   };
 
   const triggerFilePicker = () => fileInputRef.current?.click();
+
+  const onEliminarLogo = () => {
+    if (!logoUrl) return;
+    const ok = window.confirm(
+      "¿Eliminar tu logo? Podrás subir uno nuevo después.",
+    );
+    if (!ok) return;
+    startLogoTransition(async () => {
+      const result = await eliminarLogoAction();
+      if (result.ok) {
+        setPerfil(result.data);
+        setLogoUrl(result.data.logo_url ?? null);
+        toast.success("Logo eliminado.");
+      } else {
+        toast.error(result.message);
+      }
+    });
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -253,6 +421,18 @@ export function PerfilCliente({ initial }: Props) {
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
+              {logoUrl && (
+                <button
+                  type="button"
+                  onClick={onEliminarLogo}
+                  disabled={submittingLogo}
+                  className="text-state-danger flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-50"
+                  aria-label="Eliminar logo"
+                  title="Eliminar logo"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
             <input
               ref={fileInputRef}
@@ -343,12 +523,37 @@ export function PerfilCliente({ initial }: Props) {
                   className={`${filledInput} cursor-not-allowed`}
                 />
               </Field>
+              <Field
+                label="RFC"
+                htmlFor="rfc"
+                error={perfilForm.formState.errors.rfc?.message}
+              >
+                <Input
+                  id="rfc"
+                  className={filledInput}
+                  disabled={submittingPerfil}
+                  {...perfilForm.register("rfc")}
+                />
+              </Field>
             </div>
           </div>
         </div>
 
         <section className="flex flex-col gap-4 border-t border-neutral-200 pt-6">
-          <h2 className="text-brand-navy text-base font-bold">Dirección</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-brand-navy text-base font-bold">Dirección</h2>
+            {direccionTieneContenido && (
+              <button
+                type="button"
+                onClick={limpiarDireccion}
+                disabled={submittingPerfil}
+                className="text-state-danger inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold hover:bg-red-50 disabled:opacity-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Borrar dirección
+              </button>
+            )}
+          </div>
           <Field
             label="Domicilio"
             htmlFor="domicilio"
@@ -406,6 +611,24 @@ export function PerfilCliente({ initial }: Props) {
             title="Contactos de atención"
             value={contactos}
             onChange={setContactos}
+            disabled={submittingPerfil}
+          />
+        </section>
+
+        <section className="border-t border-neutral-200 pt-6">
+          <PromotoriasTable
+            title="Promotoría(s) a las que perteneces"
+            value={promotorias}
+            onChange={setPromotorias}
+            disabled={submittingPerfil}
+          />
+        </section>
+
+        <section className="border-t border-neutral-200 pt-6">
+          <RedesSocialesTable
+            title="Redes sociales"
+            value={redesSociales}
+            onChange={setRedesSociales}
             disabled={submittingPerfil}
           />
         </section>
