@@ -67,6 +67,7 @@ export function EditarCasoCliente({
       aseguradora_id: (caso.aseguradora_id ?? 0) as number,
       tipo_seguro_id: (caso.tipo_seguro_id ?? 0) as number,
       tipo_siniestro_id: caso.tipo_siniestro_id ?? null,
+      num_siniestro_poliza: caso.num_siniestro_poliza ?? "",
       folio_poliza: caso.folio_poliza ?? "",
       fecha_siniestro: caso.fecha_siniestro ?? "",
       monto_estimado:
@@ -119,6 +120,7 @@ export function EditarCasoCliente({
         telefono: data.telefono || null,
         celular: data.celular || null,
         tipo_siniestro_id: data.tipo_siniestro_id ?? null,
+        num_siniestro_poliza: data.num_siniestro_poliza,
         folio_poliza: data.folio_poliza || null,
         fecha_siniestro: data.fecha_siniestro || null,
         monto_estimado: data.monto_estimado ?? null,
@@ -234,6 +236,15 @@ export function EditarCasoCliente({
           Datos del siniestro
         </h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Field
+            label="Número de siniestro *"
+            error={errors.num_siniestro_poliza?.message}
+          >
+            <Input
+              placeholder="SIN-2026-0001"
+              {...register("num_siniestro_poliza")}
+            />
+          </Field>
           <Field
             label="Folio de la póliza"
             error={errors.folio_poliza?.message}

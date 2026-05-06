@@ -12,10 +12,20 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Field } from "@/components/forms/field";
 import { PeopleTable, type PeopleRow } from "@/components/domain/people-table";
+import {
+  PromotoriasTable,
+  type PromotoriaRow,
+} from "@/components/domain/promotorias-table";
+import {
+  RedesSocialesTable,
+  type RedSocialRow,
+} from "@/components/domain/redes-sociales-table";
 import type {
   ContactoAtencion,
   DireccionBroker,
   PerfilBroker,
+  Promotoria,
+  RedSocial,
 } from "@/lib/api/brokers";
 import {
   actualizarPerfilAction,
@@ -39,6 +49,13 @@ const perfilSchema = z.object({
     .trim()
     .min(8, "Ingresa un teléfono válido")
     .regex(/^[0-9+\-\s()]+$/, "Solo números y símbolos de teléfono"),
+  rfc: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .max(20, "Máximo 20 caracteres")
+    .optional()
+    .or(z.literal("")),
   domicilio: z.string().trim().min(3, "Ingresa tu domicilio"),
   estado: z.string().trim().min(2, "Ingresa tu estado"),
   ciudad: z.string().trim().min(2, "Ingresa tu ciudad"),
@@ -101,12 +118,62 @@ function rowsToContactos(rows: PeopleRow[]): ContactoAtencion[] {
   });
 }
 
+function promotoriasToRows(promotorias: Promotoria[]): PromotoriaRow[] {
+  return promotorias.map((p, i) => ({
+    id: p.id ? String(p.id) : `existente-${i}`,
+    nombre_promotor: p.nombre_promotor,
+    nombre_promotoria: p.nombre_promotoria,
+    correo_promotor: p.correo_promotor ?? "",
+    telefono_promotor: p.telefono_promotor ?? "",
+  }));
+}
+
+function rowsToPromotorias(rows: PromotoriaRow[]): Promotoria[] {
+  return rows.map((r) => {
+    const numericId = Number(r.id);
+    const out: Promotoria = {
+      nombre_promotor: r.nombre_promotor,
+      nombre_promotoria: r.nombre_promotoria,
+      correo_promotor: r.correo_promotor.trim() || null,
+      telefono_promotor: r.telefono_promotor.trim() || null,
+    };
+    if (Number.isInteger(numericId) && numericId > 0) out.id = numericId;
+    return out;
+  });
+}
+
+function redesToRows(redes: RedSocial[]): RedSocialRow[] {
+  return redes.map((r, i) => ({
+    id: r.id ? String(r.id) : `existente-${i}`,
+    red_social: r.red_social,
+    usuario: r.usuario,
+  }));
+}
+
+function rowsToRedes(rows: RedSocialRow[]): RedSocial[] {
+  return rows.map((r) => {
+    const numericId = Number(r.id);
+    const out: RedSocial = {
+      red_social: r.red_social,
+      usuario: r.usuario,
+    };
+    if (Number.isInteger(numericId) && numericId > 0) out.id = numericId;
+    return out;
+  });
+}
+
 type Props = { initial: PerfilBroker };
 
 export function PerfilCliente({ initial }: Props) {
   const [perfil, setPerfil] = useState<PerfilBroker>(initial);
   const [contactos, setContactos] = useState<PeopleRow[]>(
     contactosToRows(initial.contactos_atencion),
+  );
+  const [promotorias, setPromotorias] = useState<PromotoriaRow[]>(
+    promotoriasToRows(initial.promotorias),
+  );
+  const [redesSociales, setRedesSociales] = useState<RedSocialRow[]>(
+    redesToRows(initial.redes_sociales),
   );
   const [logoUrl, setLogoUrl] = useState<string | null>(
     initial.logo_url ?? null,
@@ -125,6 +192,7 @@ export function PerfilCliente({ initial }: Props) {
       apellido_paterno: perfil.apellido_paterno,
       apellido_materno: perfil.apellido_materno ?? "",
       telefono: perfil.telefono ?? "",
+      rfc: perfil.rfc ?? "",
       domicilio: direccion?.domicilio ?? "",
       estado: direccion?.estado ?? "",
       ciudad: direccion?.ciudad ?? "",
@@ -157,13 +225,18 @@ export function PerfilCliente({ initial }: Props) {
         apellido_paterno: values.apellido_paterno,
         apellido_materno: values.apellido_materno || null,
         telefono: values.telefono,
+        rfc: values.rfc?.trim() || null,
         direcciones: [direccionPayload],
         contactos_atencion: rowsToContactos(contactos),
+        promotorias: rowsToPromotorias(promotorias),
+        redes_sociales: rowsToRedes(redesSociales),
       });
 
       if (result.ok) {
         setPerfil(result.data);
         setContactos(contactosToRows(result.data.contactos_atencion));
+        setPromotorias(promotoriasToRows(result.data.promotorias));
+        setRedesSociales(redesToRows(result.data.redes_sociales));
         setLogoUrl(result.data.logo_url ?? null);
         toast.success("Perfil actualizado.");
       } else {
@@ -343,6 +416,19 @@ export function PerfilCliente({ initial }: Props) {
                   className={`${filledInput} cursor-not-allowed`}
                 />
               </Field>
+              <Field
+                label="RFC"
+                htmlFor="rfc"
+                error={perfilForm.formState.errors.rfc?.message}
+              >
+                <Input
+                  id="rfc"
+                  className={filledInput}
+                  disabled={submittingPerfil}
+                  placeholder="VECJ880326XXX"
+                  {...perfilForm.register("rfc")}
+                />
+              </Field>
             </div>
           </div>
         </div>
@@ -406,6 +492,24 @@ export function PerfilCliente({ initial }: Props) {
             title="Contactos de atención"
             value={contactos}
             onChange={setContactos}
+            disabled={submittingPerfil}
+          />
+        </section>
+
+        <section className="border-t border-neutral-200 pt-6">
+          <PromotoriasTable
+            title="Promotoría(s) a las que perteneces"
+            value={promotorias}
+            onChange={setPromotorias}
+            disabled={submittingPerfil}
+          />
+        </section>
+
+        <section className="border-t border-neutral-200 pt-6">
+          <RedesSocialesTable
+            title="Redes sociales"
+            value={redesSociales}
+            onChange={setRedesSociales}
             disabled={submittingPerfil}
           />
         </section>

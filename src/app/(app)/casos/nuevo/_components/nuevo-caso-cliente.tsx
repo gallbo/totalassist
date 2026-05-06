@@ -316,6 +316,15 @@ export function NuevoCasoCliente({
         </h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Field
+            label="Número de siniestro *"
+            error={errors.num_siniestro_poliza?.message}
+          >
+            <Input
+              placeholder="SIN-2026-0001"
+              {...register("num_siniestro_poliza")}
+            />
+          </Field>
+          <Field
             label="Folio de la póliza"
             error={errors.folio_poliza?.message}
           >
