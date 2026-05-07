@@ -1,0 +1,172 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { Check, Copy, RefreshCw, Share2 } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { compartirCasoAction } from "../_actions";
+
+type Props = {
+  casoId: number;
+};
+
+export function CompartirCasoModal({ casoId }: Props) {
+  const [open, setOpen] = useState(false);
+  const [url, setUrl] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [copiado, setCopiado] = useState(false);
+
+  const generar = (regenerar: boolean) => {
+    startTransition(async () => {
+      const result = await compartirCasoAction(casoId, { regenerar });
+      if (result.ok) {
+        setUrl(result.data.url);
+        setExpiresAt(result.data.expires_at);
+        if (regenerar) {
+          toast.success(
+            "Generamos un enlace nuevo. El anterior ya no funciona.",
+          );
+        }
+      } else {
+        toast.error(result.message);
+      }
+    });
+  };
+
+  const onOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (next && !url) {
+      generar(false);
+    }
+    if (!next) {
+      setCopiado(false);
+    }
+  };
+
+  const copiar = async () => {
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiado(true);
+      toast.success("Enlace copiado.");
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      toast.error(
+        "No pudimos copiar el enlace. Selecciónalo y cópialo manualmente.",
+      );
+    }
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetTrigger
+        render={
+          <Button
+            variant="outline"
+            className="text-brand-navy h-9 rounded-full bg-white px-4 ring-1 ring-neutral-200 hover:bg-neutral-50"
+          >
+            <Share2 className="mr-1.5 h-3.5 w-3.5" /> Compartir con cliente
+          </Button>
+        }
+      />
+      <SheetContent side="right" className="w-[380px] sm:w-[440px]">
+        <SheetHeader className="border-b border-neutral-200 text-left">
+          <SheetTitle className="text-brand-navy text-base font-bold">
+            Compartir con cliente
+          </SheetTitle>
+        </SheetHeader>
+
+        <div className="flex flex-1 flex-col gap-5 px-4 py-5">
+          <p className="text-sm text-neutral-600">
+            Comparte esta liga con tu cliente para que pueda consultar el avance
+            del caso. La liga es de solo lectura: tu cliente no podrá modificar
+            nada.
+          </p>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-xs text-neutral-500" htmlFor="url-publica">
+              Enlace
+            </label>
+            <div className="flex gap-2">
+              <Input
+                id="url-publica"
+                value={url ?? ""}
+                readOnly
+                placeholder={isPending ? "Generando…" : ""}
+                onFocus={(e) => e.currentTarget.select()}
+                className="font-mono text-xs"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={copiar}
+                disabled={!url || isPending}
+                aria-label="Copiar enlace"
+                className="shrink-0"
+              >
+                {copiado ? (
+                  <Check className="h-4 w-4 text-emerald-600" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            {expiresAt ? (
+              <p className="text-xs text-neutral-500">
+                Disponible hasta el {formatearFecha(expiresAt)}.
+              </p>
+            ) : url ? (
+              <p className="text-xs text-neutral-500">
+                Este enlace seguirá disponible mientras el caso esté abierto.
+              </p>
+            ) : null}
+          </div>
+
+          <div className="border-t border-neutral-200 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (
+                  confirm(
+                    "Esto invalida el enlace anterior. ¿Quieres generar uno nuevo?",
+                  )
+                ) {
+                  generar(true);
+                }
+              }}
+              disabled={isPending}
+              className="w-full"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Regenerar enlace
+            </Button>
+            <p className="mt-2 text-xs text-neutral-500">
+              Úsalo si compartiste el enlace por error con la persona
+              equivocada.
+            </p>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function formatearFecha(iso: string): string {
+  const fecha = new Date(iso);
+  if (Number.isNaN(fecha.getTime())) return iso;
+  return fecha.toLocaleDateString("es-MX", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}

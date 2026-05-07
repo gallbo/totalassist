@@ -243,6 +243,12 @@ export type RegistrarCasoResponse = {
   paquete: { id: number; casos_restantes: number };
 };
 
+export type CompartirCasoResponse = {
+  url: string;
+  expires_at: string | null;
+  correo_enviado: boolean;
+};
+
 export type ListarCasosParams = {
   page?: number;
   per_page?: number;
@@ -569,6 +575,21 @@ export const brokerApi = {
       {
         method: "DELETE",
         url: `/api/brokers/casos/${casoId}/archivos/${archivoId}`,
+      },
+      token,
+    );
+  },
+
+  compartirCaso(
+    token: string,
+    casoId: number,
+    opts: { regenerar?: boolean } = {},
+  ) {
+    return request<CompartirCasoResponse>(
+      {
+        method: "POST",
+        url: `/api/brokers/casos/${casoId}/compartir`,
+        data: { regenerar: opts.regenerar ?? false },
       },
       token,
     );
