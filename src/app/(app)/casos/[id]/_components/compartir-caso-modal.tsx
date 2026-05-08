@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Copy, RefreshCw, Share2 } from "lucide-react";
+import { Check, Copy, Mail, RefreshCw, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +16,10 @@ import { compartirCasoAction } from "../_actions";
 
 type Props = {
   casoId: number;
+  correoCliente: string | null;
 };
 
-export function CompartirCasoModal({ casoId }: Props) {
+export function CompartirCasoModal({ casoId, correoCliente }: Props) {
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
@@ -34,6 +35,26 @@ export function CompartirCasoModal({ casoId }: Props) {
         if (regenerar) {
           toast.success(
             "Generamos un enlace nuevo. El anterior ya no funciona.",
+          );
+        }
+      } else {
+        toast.error(result.message);
+      }
+    });
+  };
+
+  const enviarCorreo = () => {
+    if (!correoCliente) return;
+    startTransition(async () => {
+      const result = await compartirCasoAction(casoId, { enviar_correo: true });
+      if (result.ok) {
+        setUrl(result.data.url);
+        setExpiresAt(result.data.expires_at);
+        if (result.data.correo_enviado) {
+          toast.success(`Enviamos el enlace a ${correoCliente}.`);
+        } else {
+          toast.error(
+            "No pudimos enviar el correo. Copia el enlace y compártelo manualmente.",
           );
         }
       } else {
@@ -129,6 +150,33 @@ export function CompartirCasoModal({ casoId }: Props) {
                 Este enlace seguirá disponible mientras el caso esté abierto.
               </p>
             ) : null}
+          </div>
+
+          <div className="border-t border-neutral-200 pt-4">
+            <Button
+              type="button"
+              onClick={enviarCorreo}
+              disabled={!correoCliente || !url || isPending}
+              title={
+                !correoCliente
+                  ? "Este caso no tiene correo cargado. Edítalo para poder enviar el enlace."
+                  : undefined
+              }
+              className="bg-brand-yellow hover:bg-brand-yellow-hover text-brand-navy w-full font-semibold"
+            >
+              <Mail className="mr-2 h-4 w-4" />
+              Enviar al cliente
+            </Button>
+            {correoCliente ? (
+              <p className="mt-2 text-xs text-neutral-500">
+                Lo enviaremos a {correoCliente}.
+              </p>
+            ) : (
+              <p className="mt-2 text-xs text-neutral-500">
+                Este caso no tiene correo cargado. Edítalo si quieres enviarlo
+                desde aquí, o copia el enlace y compártelo por WhatsApp.
+              </p>
+            )}
           </div>
 
           <div className="border-t border-neutral-200 pt-4">

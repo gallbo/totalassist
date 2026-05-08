@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
-import { brokerApi, type PerfilBroker } from "@/lib/api/brokers";
+import {
+  brokerApi,
+  type FeedbackResumen,
+  type PerfilBroker,
+} from "@/lib/api/brokers";
 import { ApiError } from "@/lib/api/client";
 import { getServerAccessToken } from "@/lib/auth-tokens";
 import { PageCard } from "@/components/layout/page-card";
@@ -20,7 +24,14 @@ export default async function PerfilPage() {
   const token = await getServerAccessToken();
   if (!token) redirect("/login");
 
-  const perfil = await cargarPerfil(token);
+  const [perfil, feedback] = await Promise.all([
+    cargarPerfil(token),
+    brokerApi.getFeedbackResumen(token).catch<FeedbackResumen>(() => ({
+      promedio: 0,
+      total: 0,
+    })),
+  ]);
+
   if (perfil === "auth") redirect("/login");
 
   if (perfil === "error") {
@@ -40,7 +51,7 @@ export default async function PerfilPage() {
 
   return (
     <PageCard>
-      <PerfilCliente initial={perfil} />
+      <PerfilCliente initial={perfil} feedback={feedback} />
     </PageCard>
   );
 }

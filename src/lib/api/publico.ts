@@ -1,5 +1,16 @@
 import { ApiError, request } from "./client";
 
+export type EvaluacionPublica = {
+  calificacion: number;
+  comentarios: string | null;
+  created_at: string | null;
+};
+
+export type EnviarEvaluacionInput = {
+  calificacion: number;
+  comentarios?: string;
+};
+
 export type CasoPublico = {
   folio: string | null;
   estatus: { id: number; label: string };
@@ -40,6 +51,7 @@ export type BrokerPublicoCompartido = {
 export type CasoPublicoResponse = {
   caso: CasoPublico;
   broker: BrokerPublicoCompartido | null;
+  evaluacion: EvaluacionPublica | null;
 };
 
 export const publicoApi = {
@@ -47,6 +59,14 @@ export const publicoApi = {
     return request<CasoPublicoResponse>({
       method: "GET",
       url: `/api/publico/casos/${encodeURIComponent(token)}`,
+    });
+  },
+
+  enviarEvaluacion(token: string, input: EnviarEvaluacionInput) {
+    return request<EvaluacionPublica>({
+      method: "POST",
+      url: `/api/publico/casos/${encodeURIComponent(token)}/evaluacion`,
+      data: input,
     });
   },
 };

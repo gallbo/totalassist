@@ -2,8 +2,11 @@ import { PageCard } from "@/components/layout/page-card";
 import { ApiError } from "@/lib/api/client";
 import { getCasoPublicoOrExpired } from "@/lib/api/publico";
 import { EnlaceExpirado } from "./_components/enlace-expirado";
+import { Evaluacion } from "./_components/evaluacion";
 import { SeguimientoCliente } from "./_components/seguimiento-cliente";
 import { SeguimientoHeader } from "./_components/seguimiento-header";
+
+const ESTATUS_CERRADOS = new Set([1, 3]);
 
 type Props = {
   params: Promise<{ token: string }>;
@@ -44,11 +47,18 @@ export default async function SeguimientoPage({ params }: Props) {
     );
   }
 
+  const muestraEvaluacion = ESTATUS_CERRADOS.has(payload.caso.estatus.id);
+
   return (
     <>
       <SeguimientoHeader broker={payload.broker} />
       <PageCard>
         <SeguimientoCliente caso={payload.caso} />
+        {muestraEvaluacion ? (
+          <div className="mt-6">
+            <Evaluacion token={token} evaluacionInicial={payload.evaluacion} />
+          </div>
+        ) : null}
       </PageCard>
     </>
   );

@@ -83,7 +83,7 @@ export function CasoDetalleVista({ caso }: { caso: CasoDetalle }) {
             {ESTATUS_LABELS[caso.estatus_caso] ??
               `Estatus ${caso.estatus_caso}`}
           </span>
-          <CompartirCasoModal casoId={caso.id} />
+          <CompartirCasoModal casoId={caso.id} correoCliente={caso.correo} />
           <Button
             variant="outline"
             className="text-brand-navy h-9 rounded-full bg-white px-4 ring-1 ring-neutral-200 hover:bg-neutral-50"

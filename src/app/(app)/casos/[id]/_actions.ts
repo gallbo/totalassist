@@ -70,7 +70,7 @@ export async function borrarArchivoCasoAction(
 
 export async function compartirCasoAction(
   casoId: number,
-  opts: { regenerar?: boolean } = {},
+  opts: { regenerar?: boolean; enviar_correo?: boolean } = {},
 ): Promise<ActionResult<CompartirCasoResponse>> {
   return withToken((t) => brokerApi.compartirCaso(t, casoId, opts));
 }
