@@ -5,6 +5,7 @@ import { Handshake } from "lucide-react";
 import { toast } from "sonner";
 import { BrandButton } from "@/components/ui/brand-button";
 import { cn } from "@/lib/utils";
+import { formatearFechaLarga } from "@/lib/fecha";
 import type { PaqueteCatalogo, PaqueteContratado } from "@/lib/api/brokers";
 import { contratarPaqueteAction } from "../_actions";
 
@@ -12,12 +13,6 @@ const currency = new Intl.NumberFormat("es-MX", {
   style: "currency",
   currency: "MXN",
   maximumFractionDigits: 0,
-});
-
-const fechaFormatter = new Intl.DateTimeFormat("es-MX", {
-  day: "2-digit",
-  month: "long",
-  year: "numeric",
 });
 
 const GRADIENTES = [
@@ -37,7 +32,7 @@ export function PaquetesCliente({ paquetes, catalogo }: Props) {
 
   const vigente = paquetes.find((p) => p.vigente) ?? null;
   const vigenteHasta = vigente?.fecha_expiracion
-    ? fechaFormatter.format(new Date(vigente.fecha_expiracion + "T00:00:00"))
+    ? formatearFechaLarga(vigente.fecha_expiracion)
     : null;
 
   const onContratar = (paqueteId: number) => {

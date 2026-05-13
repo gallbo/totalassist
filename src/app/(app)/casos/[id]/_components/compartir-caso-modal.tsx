@@ -12,6 +12,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Tooltip } from "@/components/ui/tooltip";
+import { formatearFechaLarga } from "@/lib/fecha";
 import { compartirCasoAction } from "../_actions";
 
 type Props = {
@@ -89,16 +91,19 @@ export function CompartirCasoModal({ casoId, correoCliente }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetTrigger
-        render={
-          <Button
-            variant="outline"
-            className="text-brand-navy h-9 rounded-full bg-white px-4 ring-1 ring-neutral-200 hover:bg-neutral-50"
-          >
-            <Share2 className="mr-1.5 h-3.5 w-3.5" /> Compartir con cliente
-          </Button>
-        }
-      />
+      <Tooltip label="Compartir con cliente">
+        <SheetTrigger
+          render={
+            <Button
+              variant="outline"
+              aria-label="Compartir con cliente"
+              className="text-brand-navy inline-flex size-9 items-center justify-center rounded-full bg-white p-0 ring-1 ring-neutral-200 hover:bg-neutral-50"
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
+          }
+        />
+      </Tooltip>
       <SheetContent side="right" className="w-[380px] sm:w-[440px]">
         <SheetHeader className="border-b border-neutral-200 text-left">
           <SheetTitle className="text-brand-navy text-base font-bold">
@@ -143,7 +148,7 @@ export function CompartirCasoModal({ casoId, correoCliente }: Props) {
             </div>
             {expiresAt ? (
               <p className="text-xs text-neutral-500">
-                Disponible hasta el {formatearFecha(expiresAt)}.
+                Disponible hasta el {formatearFechaLarga(expiresAt)}.
               </p>
             ) : url ? (
               <p className="text-xs text-neutral-500">
@@ -207,14 +212,4 @@ export function CompartirCasoModal({ casoId, correoCliente }: Props) {
       </SheetContent>
     </Sheet>
   );
-}
-
-function formatearFecha(iso: string): string {
-  const fecha = new Date(iso);
-  if (Number.isNaN(fecha.getTime())) return iso;
-  return fecha.toLocaleDateString("es-MX", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
 }

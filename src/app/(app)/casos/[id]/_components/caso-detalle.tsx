@@ -17,7 +17,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { formatearFechaLarga } from "@/lib/fecha";
 import type { CasoArchivo, CasoDetalle } from "@/lib/api/brokers";
 import { borrarArchivoCasoAction, subirArchivoCasoAction } from "../_actions";
 import { CompartirCasoModal } from "./compartir-caso-modal";
@@ -83,14 +85,17 @@ export function CasoDetalleVista({ caso }: { caso: CasoDetalle }) {
             {ESTATUS_LABELS[caso.estatus_caso] ??
               `Estatus ${caso.estatus_caso}`}
           </span>
+          <Tooltip label="Editar">
+            <Button
+              variant="outline"
+              aria-label="Editar"
+              className="text-brand-navy inline-flex size-9 items-center justify-center rounded-full bg-white p-0 ring-1 ring-neutral-200 hover:bg-neutral-50"
+              render={<Link href={`/casos/${caso.id}/editar`} />}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </Tooltip>
           <CompartirCasoModal casoId={caso.id} correoCliente={caso.correo} />
-          <Button
-            variant="outline"
-            className="text-brand-navy h-9 rounded-full bg-white px-4 ring-1 ring-neutral-200 hover:bg-neutral-50"
-            render={<Link href={`/casos/${caso.id}/editar`} />}
-          >
-            <Pencil className="mr-1.5 h-3.5 w-3.5" /> Editar
-          </Button>
         </div>
       </div>
 
@@ -101,7 +106,9 @@ export function CasoDetalleVista({ caso }: { caso: CasoDetalle }) {
         <Dato label="Aseguradora">{caso.aseguradora ?? "—"}</Dato>
         <Dato label="Tipo de seguro">{caso.tipo_seguro ?? "—"}</Dato>
         <Dato label="Folio de la póliza">{caso.folio_poliza ?? "—"}</Dato>
-        <Dato label="Fecha del siniestro">{caso.fecha_siniestro ?? "—"}</Dato>
+        <Dato label="Fecha del siniestro">
+          {formatearFechaLarga(caso.fecha_siniestro)}
+        </Dato>
         <Dato label="Monto estimado">
           {caso.monto_estimado != null
             ? `$${Number(caso.monto_estimado).toLocaleString("es-MX")}`

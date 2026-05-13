@@ -14,6 +14,7 @@ import {
   FaYoutube,
 } from "react-icons/fa6";
 import { Input } from "@/components/ui/input";
+import { SelectInput } from "@/components/ui/select-input";
 import { BrandButton } from "@/components/ui/brand-button";
 import {
   REDES_SOCIALES_VALORES,
@@ -98,8 +99,6 @@ type Props = {
   disabled?: boolean;
 };
 
-const filledInput = "border-brand-navy/30 bg-transparent";
-
 export function RedesSocialesTable({
   title,
   value,
@@ -167,18 +166,15 @@ export function RedesSocialesTable({
       <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_2fr_auto] md:items-end">
         <label className="flex flex-col gap-1">
           <span className="text-xs text-neutral-600">Red social</span>
-          <select
+          <SelectInput
             value={redSocial}
             disabled={disabled}
-            onChange={(e) => setRedSocial(e.target.value as RedSocialCodigo)}
-            className={`h-11 rounded-md border px-3 text-sm ${filledInput}`}
-          >
-            {REDES_SOCIALES_VALORES.map((v) => (
-              <option key={v} value={v}>
-                {REDES_SOCIALES_META[v].label}
-              </option>
-            ))}
-          </select>
+            onValueChange={(v) => setRedSocial(v as RedSocialCodigo)}
+            options={REDES_SOCIALES_VALORES.map((v) => ({
+              value: v,
+              label: REDES_SOCIALES_META[v].label,
+            }))}
+          />
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-xs text-neutral-600">Usuario</span>
