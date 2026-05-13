@@ -7,6 +7,7 @@ import { ChevronRight, Plus, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { BrandButton } from "@/components/ui/brand-button";
 import { cn } from "@/lib/utils";
+import { formatearFechaLarga } from "@/lib/fecha";
 import type { CasoResumen, ListaCasos } from "@/lib/api/brokers";
 
 const ESTATUS_OPTIONS: Array<{ value: string; label: string }> = [
@@ -220,7 +221,7 @@ function Fila({ caso, index }: { caso: CasoResumen; index: number }) {
       <td className="px-4 py-4 text-neutral-600">{caso.aseguradora ?? "—"}</td>
       <td className="px-4 py-4 text-neutral-600">{caso.tipo_seguro ?? "—"}</td>
       <td className="px-4 py-4 text-neutral-600">
-        {caso.fecha_siniestro ?? "—"}
+        {formatearFechaLarga(caso.fecha_siniestro)}
       </td>
       <td className="px-4 py-4">
         <EstatusBadge estatus={caso.estatus_caso} />

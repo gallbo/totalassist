@@ -243,6 +243,37 @@ export type RegistrarCasoResponse = {
   paquete: { id: number; casos_restantes: number };
 };
 
+export type CompartirCasoResponse = {
+  url: string;
+  expires_at: string | null;
+  correo_enviado: boolean;
+};
+
+export type FeedbackResumen = {
+  promedio: number;
+  total: number;
+};
+
+export type FeedbackComentario = {
+  id: number;
+  calificacion: number;
+  comentarios: string | null;
+  created_at: string | null;
+  caso: {
+    id: number;
+    folio: string | null;
+    nombre_asegurado_abreviado: string | null;
+  };
+};
+
+export type FeedbackLista = {
+  data: FeedbackComentario[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+};
+
 export type ListarCasosParams = {
   page?: number;
   per_page?: number;
@@ -569,6 +600,41 @@ export const brokerApi = {
       {
         method: "DELETE",
         url: `/api/brokers/casos/${casoId}/archivos/${archivoId}`,
+      },
+      token,
+    );
+  },
+
+  getFeedbackResumen(token: string) {
+    return request<FeedbackResumen>(
+      { method: "GET", url: "/api/brokers/feedback/resumen" },
+      token,
+    );
+  },
+
+  getFeedbackLista(
+    token: string,
+    params: { page?: number; per_page?: number } = {},
+  ) {
+    return request<FeedbackLista>(
+      { method: "GET", url: "/api/brokers/feedback", params },
+      token,
+    );
+  },
+
+  compartirCaso(
+    token: string,
+    casoId: number,
+    opts: { regenerar?: boolean; enviar_correo?: boolean } = {},
+  ) {
+    return request<CompartirCasoResponse>(
+      {
+        method: "POST",
+        url: `/api/brokers/casos/${casoId}/compartir`,
+        data: {
+          regenerar: opts.regenerar ?? false,
+          enviar_correo: opts.enviar_correo ?? false,
+        },
       },
       token,
     );

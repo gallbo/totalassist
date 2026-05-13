@@ -13,6 +13,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
+import { SelectInput } from "@/components/ui/select-input";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Button } from "@/components/ui/button";
 import { SelectPill } from "@/components/forms/select-pill";
@@ -296,11 +298,18 @@ export function EditarCasoCliente({
             <Input type="date" {...register("fecha_siniestro")} />
           </Field>
           <Field label="Monto estimado (MXN)">
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              {...register("monto_estimado")}
+            <Controller
+              control={control}
+              name="monto_estimado"
+              render={({ field, fieldState }) => (
+                <MoneyInput
+                  name={field.name}
+                  value={field.value ?? null}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  invalid={!!fieldState.error}
+                />
+              )}
             />
           </Field>
         </div>
@@ -316,24 +325,18 @@ export function EditarCasoCliente({
             <Controller
               control={control}
               name="estado_id"
-              render={({ field }) => (
-                <select
-                  {...field}
+              render={({ field, fieldState }) => (
+                <SelectInput
+                  name={field.name}
                   value={field.value ?? ""}
-                  onChange={(e) =>
-                    field.onChange(
-                      e.target.value ? Number(e.target.value) : null,
-                    )
-                  }
-                  className="border-input bg-background text-foreground h-11 rounded-md border px-3 text-sm"
-                >
-                  <option value="">Selecciona…</option>
-                  {estados.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.nombre}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(v) => field.onChange(v ? Number(v) : null)}
+                  onBlur={field.onBlur}
+                  invalid={!!fieldState.error}
+                  options={estados.map((e) => ({
+                    value: e.id,
+                    label: e.nombre,
+                  }))}
+                />
               )}
             />
           </Field>

@@ -2,7 +2,14 @@
 
 import { useRef, useState, useTransition } from "react";
 import Image from "next/image";
-import { Pencil, Trash2 } from "lucide-react";
+import Link from "next/link";
+import {
+  ChevronRight,
+  MessageSquareText,
+  Pencil,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -23,10 +30,12 @@ import {
 import type {
   ContactoAtencion,
   DireccionBroker,
+  FeedbackResumen,
   PerfilBroker,
   Promotoria,
   RedSocial,
 } from "@/lib/api/brokers";
+import { cn } from "@/lib/utils";
 import {
   actualizarPerfilAction,
   cambiarPasswordAction,
@@ -214,9 +223,9 @@ function rowsToRedes(rows: RedSocialRow[]): RedSocial[] {
   });
 }
 
-type Props = { initial: PerfilBroker };
+type Props = { initial: PerfilBroker; feedback: FeedbackResumen };
 
-export function PerfilCliente({ initial }: Props) {
+export function PerfilCliente({ initial, feedback }: Props) {
   const [perfil, setPerfil] = useState<PerfilBroker>(initial);
   const [contactos, setContactos] = useState<PeopleRow[]>(
     contactosToRows(initial.contactos_atencion),
@@ -388,7 +397,18 @@ export function PerfilCliente({ initial }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-brand-navy text-xl font-bold">Mi perfil</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-brand-navy text-xl font-bold">Mi perfil</h1>
+        {feedback.total > 0 ? (
+          <Link
+            href="/comentarios"
+            className="text-brand-navy inline-flex items-center gap-1 text-sm font-semibold hover:underline"
+          >
+            Ver comentarios
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        ) : null}
+      </div>
 
       <form onSubmit={submitPerfil} noValidate className="flex flex-col gap-6">
         <div className="flex flex-col gap-6 md:flex-row md:items-start">
@@ -536,6 +556,8 @@ export function PerfilCliente({ initial }: Props) {
                 />
               </Field>
             </div>
+
+            <FeedbackBloque feedback={feedback} />
           </div>
         </div>
 
@@ -702,6 +724,54 @@ export function PerfilCliente({ initial }: Props) {
           </BrandButton>
         </div>
       </form>
+    </div>
+  );
+}
+
+function FeedbackBloque({ feedback }: { feedback: FeedbackResumen }) {
+  const promedioRedondeado = Math.round(feedback.promedio);
+
+  return (
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-neutral-50 px-4 py-3 ring-1 ring-neutral-200">
+      <div className="flex flex-col gap-1">
+        <span className="text-xs text-neutral-500">Feedback de clientes</span>
+        {feedback.total === 0 ? (
+          <span className="text-brand-navy text-sm">
+            Aún sin evaluaciones de tus clientes.
+          </span>
+        ) : (
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <Star
+                key={n}
+                className={cn(
+                  "h-6 w-6",
+                  n <= promedioRedondeado
+                    ? "fill-brand-yellow text-brand-yellow"
+                    : "text-neutral-300",
+                )}
+                strokeWidth={1.5}
+              />
+            ))}
+            <span className="text-brand-navy ml-2 text-sm font-semibold tabular-nums">
+              {feedback.promedio.toFixed(1)}
+            </span>
+            <span className="text-xs text-neutral-500">
+              ({feedback.total}{" "}
+              {feedback.total === 1 ? "comentario" : "comentarios"})
+            </span>
+          </div>
+        )}
+      </div>
+      {feedback.total > 0 ? (
+        <Link
+          href="/comentarios"
+          className="bg-brand-navy hover:bg-brand-navy-hover inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white"
+        >
+          <MessageSquareText className="h-4 w-4" />
+          Ver comentarios
+        </Link>
+      ) : null}
     </div>
   );
 }

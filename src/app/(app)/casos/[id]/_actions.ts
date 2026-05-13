@@ -8,6 +8,7 @@ import {
   type ActualizarCasoInput,
   type CasoArchivo,
   type CasoDetalle,
+  type CompartirCasoResponse,
   type MensajeResponse,
 } from "@/lib/api/brokers";
 
@@ -65,6 +66,13 @@ export async function borrarArchivoCasoAction(
   );
   if (result.ok) revalidatePath(`/casos/${casoId}`);
   return result;
+}
+
+export async function compartirCasoAction(
+  casoId: number,
+  opts: { regenerar?: boolean; enviar_correo?: boolean } = {},
+): Promise<ActionResult<CompartirCasoResponse>> {
+  return withToken((t) => brokerApi.compartirCaso(t, casoId, opts));
 }
 
 export async function actualizarCasoAction(
