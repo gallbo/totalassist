@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatearFechaLarga } from "@/lib/fecha";
 import type { CasoPublico } from "@/lib/api/publico";
 
 const ESTATUS_TONO: Record<number, string> = {
@@ -42,30 +43,48 @@ export function SeguimientoCliente({ caso }: { caso: CasoPublico }) {
         <Dato label="Aseguradora">{caso.aseguradora ?? "—"}</Dato>
         <Dato label="Tipo de seguro">{caso.tipo_seguro ?? "—"}</Dato>
         <Dato label="Folio de la póliza">{caso.folio_poliza ?? "—"}</Dato>
-        <Dato label="Fecha del siniestro">{caso.fecha_siniestro ?? "—"}</Dato>
+        <Dato label="Fecha del siniestro">
+          {formatearFechaLarga(caso.fecha_siniestro)}
+        </Dato>
         <Dato label="Número de siniestro">
           {caso.num_siniestro_poliza ?? "—"}
         </Dato>
+        <Dato label="Monto estimado (MXN)">
+          {formatearMonto(caso.monto_estimado)}
+        </Dato>
         <Dato label="Estado">{caso.direccion.estado ?? "—"}</Dato>
-        <Dato label="Ciudad">{caso.direccion.ciudad ?? "—"}</Dato>
       </dl>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-brand-navy text-base font-bold">
-          Información general
+          {caso.tipo_persona === "fisica"
+            ? "Información personal"
+            : "Información"}
         </h2>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {caso.tipo_persona === "fisica" ? (
-            <Dato label="Nombre">{caso.nombre_asegurado ?? "—"}</Dato>
+            <>
+              <Dato label="Nombre completo">
+                {caso.nombre_asegurado ?? "—"}
+              </Dato>
+              <Dato label="RFC">{caso.rfc ?? "—"}</Dato>
+              <Dato label="Correo">{caso.correo ?? "—"}</Dato>
+              <Dato label="Teléfono">{caso.telefono ?? "—"}</Dato>
+              {caso.celular && <Dato label="Celular">{caso.celular}</Dato>}
+            </>
           ) : (
             <>
               <Dato label="Razón social">{caso.nombre_empresa ?? "—"}</Dato>
               <Dato label="Nombre comercial">
                 {caso.nombre_comercial ?? "—"}
               </Dato>
+              <Dato label="RFC">{caso.rfc ?? "—"}</Dato>
               <Dato label="Representante">
                 {caso.nombre_representante ?? "—"}
               </Dato>
+              <Dato label="Correo">{caso.correo ?? "—"}</Dato>
+              <Dato label="Teléfono">{caso.telefono ?? "—"}</Dato>
+              {caso.celular && <Dato label="Celular">{caso.celular}</Dato>}
             </>
           )}
         </div>
@@ -104,6 +123,34 @@ export function SeguimientoCliente({ caso }: { caso: CasoPublico }) {
         )}
       </section>
 
+      {caso.beneficiarios.length > 0 && (
+        <section className="flex flex-col gap-3 border-t border-neutral-200 pt-6">
+          <h2 className="text-brand-navy text-base font-bold">Beneficiarios</h2>
+          <ul className="flex flex-col gap-2">
+            {caso.beneficiarios.map((b, i) => (
+              <li
+                key={`${b.nombre}-${i}`}
+                className="flex items-center justify-between gap-3 rounded-md border border-neutral-200 px-4 py-2 text-sm"
+              >
+                <div>
+                  <div className="text-brand-navy font-medium">{b.nombre}</div>
+                  {b.parentesco && (
+                    <div className="text-xs text-neutral-600">
+                      {b.parentesco}
+                    </div>
+                  )}
+                </div>
+                {b.porcentaje != null && (
+                  <span className="text-brand-navy text-sm font-semibold">
+                    {b.porcentaje}%
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="flex flex-col gap-3 border-t border-neutral-200 pt-6">
         <h2 className="text-brand-navy text-base font-bold">Archivos</h2>
         {caso.archivos.length === 0 ? (
@@ -118,6 +165,13 @@ export function SeguimientoCliente({ caso }: { caso: CasoPublico }) {
       </section>
     </div>
   );
+}
+
+function formatearMonto(monto: string | number | null): string {
+  if (monto == null) return "—";
+  const valor = typeof monto === "string" ? Number(monto) : monto;
+  if (!Number.isFinite(valor)) return "—";
+  return `$${valor.toLocaleString("es-MX")}`;
 }
 
 function Dato({

@@ -19,11 +19,16 @@ export type CasoPublico = {
   nombre_empresa: string | null;
   nombre_comercial: string | null;
   nombre_representante: string | null;
+  rfc: string | null;
+  correo: string | null;
+  telefono: string | null;
+  celular: string | null;
   tipo_seguro: string | null;
   aseguradora: string | null;
   fecha_siniestro: string | null;
   num_siniestro_poliza: string | null;
   folio_poliza: string | null;
+  monto_estimado: string | number | null;
   direccion: {
     domicilio: string | null;
     estado: string | null;
@@ -33,6 +38,11 @@ export type CasoPublico = {
     nombre: string;
     telefono: string | null;
     email: string | null;
+  }>;
+  beneficiarios: Array<{
+    nombre: string;
+    parentesco: string | null;
+    porcentaje: number | null;
   }>;
   archivos: Array<{
     nombre_original: string;
