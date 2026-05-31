@@ -1,4 +1,7 @@
-import { ApiError, request } from "./client";
+import { ApiError, type ApiErrorPayload, request } from "./client";
+
+const baseURL =
+  process.env.NEXT_PUBLIC_SKIPPER_API_URL ?? "http://localhost:8080";
 
 export type EvaluacionPublica = {
   calificacion: number;
@@ -64,6 +67,26 @@ export type CasoPublicoResponse = {
   evaluacion: EvaluacionPublica | null;
 };
 
+export type DocumentoPublico = {
+  id: number;
+  nombre_original: string;
+  tipo_documento: string | null;
+  mime_type: string | null;
+  tamano: number | null;
+  url: string | null;
+  created_at: string | null;
+};
+
+export type GrupoDocumentos = {
+  cobertura_id: number | null;
+  cobertura: string;
+  documentos: DocumentoPublico[];
+};
+
+export type DocumentosResponse = {
+  grupos: GrupoDocumentos[];
+};
+
 export const publicoApi = {
   getCaso(token: string) {
     return request<CasoPublicoResponse>({
@@ -78,6 +101,51 @@ export const publicoApi = {
       url: `/api/publico/casos/${encodeURIComponent(token)}/evaluacion`,
       data: input,
     });
+  },
+
+  getDocumentos(token: string) {
+    return request<DocumentosResponse>({
+      method: "GET",
+      url: `/api/publico/casos/${encodeURIComponent(token)}/documentos`,
+    });
+  },
+
+  // fetch nativo (no axios) por el bug de FormData de axios v1 en Node — mismo
+  // motivo que subirArchivoCaso en brokers.ts. Corre server-side (server action),
+  // así que no hay CORS de por medio.
+  async subirDocumento(
+    token: string,
+    archivo: File,
+  ): Promise<DocumentoPublico> {
+    const form = new FormData();
+    form.append("archivo", archivo);
+
+    const res = await fetch(
+      `${baseURL}/api/publico/casos/${encodeURIComponent(token)}/documentos`,
+      {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: form,
+      },
+    );
+
+    if (!res.ok) {
+      let payload: ApiErrorPayload | undefined;
+      try {
+        payload = (await res.json()) as ApiErrorPayload;
+      } catch {
+        // Respuesta sin JSON; usamos el status para mapear el mensaje.
+      }
+      throw new ApiError(
+        payload?.mensaje ??
+          "No pudimos enviar el documento. Intenta de nuevo en unos segundos.",
+        res.status,
+        payload?.error,
+        payload?.detalles ?? payload?.errors,
+      );
+    }
+
+    return (await res.json()) as DocumentoPublico;
   },
 };
 
@@ -94,5 +162,18 @@ export async function getCasoPublicoOrExpired(
       return null;
     }
     throw error;
+  }
+}
+
+// Los documentos son secundarios: si fallan no deben tumbar la página de
+// seguimiento. Cualquier error (incluido 410) se traduce a lista vacía.
+export async function getDocumentosOrEmpty(
+  token: string,
+): Promise<GrupoDocumentos[]> {
+  try {
+    const res = await publicoApi.getDocumentos(token);
+    return res.grupos;
+  } catch {
+    return [];
   }
 }

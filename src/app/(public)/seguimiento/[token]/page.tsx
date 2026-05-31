@@ -1,6 +1,11 @@
 import { PageCard } from "@/components/layout/page-card";
 import { ApiError } from "@/lib/api/client";
-import { getCasoPublicoOrExpired } from "@/lib/api/publico";
+import {
+  getCasoPublicoOrExpired,
+  getDocumentosOrEmpty,
+  type GrupoDocumentos,
+} from "@/lib/api/publico";
+import { DocumentosAsegurado } from "./_components/documentos-asegurado";
 import { EnlaceExpirado } from "./_components/enlace-expirado";
 import { Evaluacion } from "./_components/evaluacion";
 import { SeguimientoCliente } from "./_components/seguimiento-cliente";
@@ -18,9 +23,13 @@ export default async function SeguimientoPage({ params }: Props) {
   const { token } = await params;
 
   let payload: Awaited<ReturnType<typeof getCasoPublicoOrExpired>> = null;
+  let grupos: GrupoDocumentos[] = [];
   let huboError = false;
   try {
-    payload = await getCasoPublicoOrExpired(token);
+    [payload, grupos] = await Promise.all([
+      getCasoPublicoOrExpired(token),
+      getDocumentosOrEmpty(token),
+    ]);
   } catch (error) {
     huboError = error instanceof ApiError;
   }
@@ -54,6 +63,9 @@ export default async function SeguimientoPage({ params }: Props) {
       <SeguimientoHeader broker={payload.broker} />
       <PageCard>
         <SeguimientoCliente caso={payload.caso} />
+        <div className="mt-6">
+          <DocumentosAsegurado token={token} grupos={grupos} />
+        </div>
         {muestraEvaluacion ? (
           <div className="mt-6">
             <Evaluacion token={token} evaluacionInicial={payload.evaluacion} />
