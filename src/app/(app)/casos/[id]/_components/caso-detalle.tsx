@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ClipboardList,
   Download,
   ExternalLink,
   File as FileIcon,
@@ -117,6 +118,28 @@ export function CasoDetalleVista({ caso }: { caso: CasoDetalle }) {
         <Dato label="Estado">{caso.estado ?? "—"}</Dato>
         <Dato label="Paquete">{caso.paquete?.descripcion ?? "—"}</Dato>
       </dl>
+
+      <section className="bg-brand-navy/[0.03] flex flex-col gap-3 rounded-xl border border-neutral-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <ClipboardList className="text-brand-navy mt-0.5 h-5 w-5 shrink-0" />
+          <div>
+            <h2 className="text-brand-navy text-base font-bold">
+              Cuestionario del siniestro
+            </h2>
+            <p className="text-sm text-neutral-600">
+              Cuéntanos los detalles del siniestro para agilizar la atención de
+              tu cliente.
+            </p>
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          className="text-brand-navy h-10 shrink-0 rounded-full bg-white px-5 ring-1 ring-neutral-200 hover:bg-neutral-50"
+          render={<Link href={`/casos/${caso.id}/cuestionario`} />}
+        >
+          Responder cuestionario
+        </Button>
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-brand-navy text-base font-bold">

@@ -232,6 +232,26 @@ export type RegistrarCasoInput = {
 
 export type ActualizarCasoInput = Partial<RegistrarCasoInput>;
 
+export type CuestionarioTipoPregunta =
+  | "si_no"
+  | "escala"
+  | "opciones"
+  | "fecha"
+  | "numero"
+  | "texto";
+
+export type CuestionarioPregunta = {
+  pregunta_id: number;
+  texto: string;
+  tipo: CuestionarioTipoPregunta;
+  opciones: string[];
+  respuesta: string | null;
+};
+
+export type CuestionarioCaso = {
+  cuestionario: CuestionarioPregunta[];
+};
+
 export type RegistrarCasoResponse = {
   id: number;
   folio: string | null;
@@ -536,6 +556,28 @@ export const brokerApi = {
         method: "PUT",
         url: `/api/brokers/casos/${id}`,
         data: input,
+      },
+      token,
+    );
+  },
+
+  getCuestionario(token: string, casoId: number) {
+    return request<CuestionarioCaso>(
+      { method: "GET", url: `/api/brokers/casos/${casoId}/cuestionario` },
+      token,
+    );
+  },
+
+  guardarCuestionario(
+    token: string,
+    casoId: number,
+    respuestas: Record<string, string>,
+  ) {
+    return request<MensajeResponse>(
+      {
+        method: "POST",
+        url: `/api/brokers/casos/${casoId}/cuestionario`,
+        data: { respuestas },
       },
       token,
     );
