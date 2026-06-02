@@ -1,6 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { PageCard } from "@/components/layout/page-card";
-import { brokerApi, type CasoDetalle } from "@/lib/api/brokers";
+import {
+  brokerApi,
+  type CasoDetalle,
+  type CuestionarioPregunta,
+} from "@/lib/api/brokers";
 import { ApiError } from "@/lib/api/client";
 import { getServerAccessToken } from "@/lib/auth-tokens";
 import { CasoDetalleVista } from "./_components/caso-detalle";
@@ -20,8 +24,15 @@ export default async function CasoDetallePage({
   }
 
   let caso: CasoDetalle | null = null;
+  let preguntas: CuestionarioPregunta[] = [];
   try {
-    caso = await brokerApi.getCaso(token, casoId);
+    const [casoData, cuestionario] = await Promise.all([
+      brokerApi.getCaso(token, casoId),
+      // El cuestionario es secundario: si falla no debe tumbar el detalle.
+      brokerApi.getCuestionario(token, casoId).catch(() => null),
+    ]);
+    caso = casoData;
+    preguntas = cuestionario?.cuestionario ?? [];
   } catch (error) {
     if (error instanceof ApiError) {
       if (error.status === 401) redirect("/login");
@@ -41,7 +52,7 @@ export default async function CasoDetallePage({
 
   return (
     <PageCard>
-      <CasoDetalleVista caso={caso} />
+      <CasoDetalleVista caso={caso} preguntas={preguntas} />
     </PageCard>
   );
 }

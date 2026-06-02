@@ -177,6 +177,26 @@ export type CasoResumen = {
   created_at: string | null;
 };
 
+export type EtapaCobertura = {
+  nombre: string | null;
+  estatus: "pendiente" | "activa" | "finalizada";
+};
+
+export type ResultadoCobertura = {
+  tipo: "con_pago" | "sin_pago" | "interrumpida";
+  descripcion: string;
+  monto: number | null;
+  fecha: string | null;
+};
+
+export type CoberturaCaso = {
+  nombre: string | null;
+  etapa_actual: string | null;
+  ultima_actividad: string | null;
+  resultado: ResultadoCobertura | null;
+  etapas: EtapaCobertura[];
+};
+
 export type CasoDetalle = CasoResumen & {
   tipo_persona: "fisica" | "moral";
   nombre_empresa: string | null;
@@ -194,6 +214,7 @@ export type CasoDetalle = CasoResumen & {
   contactos_atencion: CasoContactoAtencion[];
   beneficiarios: CasoBeneficiario[];
   archivos: CasoArchivo[];
+  coberturas: CoberturaCaso[];
   paquete: { id: number; descripcion: string | null } | null;
 };
 
@@ -218,7 +239,7 @@ export type RegistrarCasoInput = {
   aseguradora_id?: number | null;
   tipo_seguro_id?: number | null;
   tipo_siniestro_id?: number | null;
-  num_siniestro_poliza: string;
+  num_siniestro_poliza?: string | null;
   folio_poliza?: string | null;
   fecha_siniestro?: string | null;
   monto_estimado?: number | null;
@@ -228,6 +249,9 @@ export type RegistrarCasoInput = {
   codigo_postal?: string | null;
   contactos_atencion?: CasoContactoAtencion[];
   beneficiarios?: CasoBeneficiario[];
+  // Respuestas del cuestionario del siniestro { pregunta_id: respuesta }.
+  // Obligatorio al crear: Skipper valida Sección I completa + al menos 1 de Sección II.
+  cuestionario?: Record<string, string>;
 };
 
 export type ActualizarCasoInput = Partial<RegistrarCasoInput>;
@@ -238,13 +262,17 @@ export type CuestionarioTipoPregunta =
   | "opciones"
   | "fecha"
   | "numero"
-  | "texto";
+  | "texto"
+  | "texto_largo";
 
 export type CuestionarioPregunta = {
   pregunta_id: number;
   texto: string;
   tipo: CuestionarioTipoPregunta;
   opciones: string[];
+  // Sección I = obligatorias del formato; Sección II = al menos una contestada.
+  seccion: number;
+  obligatoria: boolean;
   respuesta: string | null;
 };
 
@@ -313,6 +341,8 @@ export type NuevoCasoBootstrap = {
     fecha_expiracion: string | null;
     descripcion: string | null;
   } | null;
+  // Preguntas del cuestionario del broker por ramo (key = tipo_seguro_id).
+  cuestionarios: Record<string, CuestionarioPregunta[]>;
 };
 
 export type DashboardData = {

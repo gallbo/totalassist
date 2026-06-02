@@ -3,7 +3,7 @@ import { ApiError } from "@/lib/api/client";
 import {
   getCasoPublicoOrExpired,
   getDocumentosOrEmpty,
-  type GrupoDocumentos,
+  type DocumentosResponse,
 } from "@/lib/api/publico";
 import { DocumentosAsegurado } from "./_components/documentos-asegurado";
 import { EnlaceExpirado } from "./_components/enlace-expirado";
@@ -23,10 +23,10 @@ export default async function SeguimientoPage({ params }: Props) {
   const { token } = await params;
 
   let payload: Awaited<ReturnType<typeof getCasoPublicoOrExpired>> = null;
-  let grupos: GrupoDocumentos[] = [];
+  let documentos: DocumentosResponse = { grupos: [], otros: [] };
   let huboError = false;
   try {
-    [payload, grupos] = await Promise.all([
+    [payload, documentos] = await Promise.all([
       getCasoPublicoOrExpired(token),
       getDocumentosOrEmpty(token),
     ]);
@@ -64,7 +64,7 @@ export default async function SeguimientoPage({ params }: Props) {
       <PageCard>
         <SeguimientoCliente caso={payload.caso} />
         <div className="mt-6">
-          <DocumentosAsegurado token={token} grupos={grupos} />
+          <DocumentosAsegurado token={token} documentos={documentos} />
         </div>
         {muestraEvaluacion ? (
           <div className="mt-6">

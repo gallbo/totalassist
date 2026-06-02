@@ -14,6 +14,26 @@ export type EnviarEvaluacionInput = {
   comentarios?: string;
 };
 
+export type EtapaCoberturaPublica = {
+  nombre: string | null;
+  estatus: "pendiente" | "activa" | "finalizada";
+};
+
+export type ResultadoCoberturaPublica = {
+  tipo: "con_pago" | "sin_pago" | "interrumpida";
+  descripcion: string;
+  monto: number | null;
+  fecha: string | null;
+};
+
+export type CoberturaPublica = {
+  nombre: string | null;
+  etapa_actual: string | null;
+  ultima_actividad: string | null;
+  resultado: ResultadoCoberturaPublica | null;
+  etapas: EtapaCoberturaPublica[];
+};
+
 export type CasoPublico = {
   folio: string | null;
   estatus: { id: number; label: string };
@@ -32,6 +52,7 @@ export type CasoPublico = {
   num_siniestro_poliza: string | null;
   folio_poliza: string | null;
   monto_estimado: string | number | null;
+  coberturas: CoberturaPublica[];
   direccion: {
     domicilio: string | null;
     estado: string | null;
@@ -77,14 +98,28 @@ export type DocumentoPublico = {
   created_at: string | null;
 };
 
+// Documento del checklist que el equipo de Total Claim Assist le asignó al
+// asegurado. "pendiente" = aún no lo entrega; "entregado" = ya tiene archivo
+// o fecha de entrega registrada.
+export type DocumentoChecklist = {
+  id: number;
+  nombre: string;
+  estado: "pendiente" | "entregado";
+  fecha_compromiso: string | null;
+  fecha_entrega: string | null;
+  observaciones: string | null;
+  archivo: DocumentoPublico | null;
+};
+
 export type GrupoDocumentos = {
   cobertura_id: number | null;
   cobertura: string;
-  documentos: DocumentoPublico[];
+  documentos: DocumentoChecklist[];
 };
 
 export type DocumentosResponse = {
   grupos: GrupoDocumentos[];
+  otros: DocumentoPublico[];
 };
 
 export const publicoApi = {
@@ -112,13 +147,18 @@ export const publicoApi = {
 
   // fetch nativo (no axios) por el bug de FormData de axios v1 en Node — mismo
   // motivo que subirArchivoCaso en brokers.ts. Corre server-side (server action),
-  // así que no hay CORS de por medio.
+  // así que no hay CORS de por medio. Si `documentoCasoId` viene, la subida se
+  // liga a ese documento del checklist y Skipper lo marca como entregado.
   async subirDocumento(
     token: string,
     archivo: File,
-  ): Promise<DocumentoPublico> {
+    documentoCasoId?: number,
+  ): Promise<DocumentoChecklist | DocumentoPublico> {
     const form = new FormData();
     form.append("archivo", archivo);
+    if (documentoCasoId) {
+      form.append("documento_caso_id", String(documentoCasoId));
+    }
 
     const res = await fetch(
       `${baseURL}/api/publico/casos/${encodeURIComponent(token)}/documentos`,
@@ -145,7 +185,7 @@ export const publicoApi = {
       );
     }
 
-    return (await res.json()) as DocumentoPublico;
+    return (await res.json()) as DocumentoChecklist | DocumentoPublico;
   },
 };
 
@@ -166,14 +206,13 @@ export async function getCasoPublicoOrExpired(
 }
 
 // Los documentos son secundarios: si fallan no deben tumbar la página de
-// seguimiento. Cualquier error (incluido 410) se traduce a lista vacía.
+// seguimiento. Cualquier error (incluido 410) se traduce a respuesta vacía.
 export async function getDocumentosOrEmpty(
   token: string,
-): Promise<GrupoDocumentos[]> {
+): Promise<DocumentosResponse> {
   try {
-    const res = await publicoApi.getDocumentos(token);
-    return res.grupos;
+    return await publicoApi.getDocumentos(token);
   } catch {
-    return [];
+    return { grupos: [], otros: [] };
   }
 }

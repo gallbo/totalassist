@@ -12,6 +12,9 @@ import {
   type MensajeResponse,
 } from "@/lib/api/brokers";
 
+// (las actions del cuestionario viven aquí desde que el cuestionario se contesta
+// dentro del form de editar; la ruta /casos/[id]/cuestionario quedó como redirect)
+
 export type ActionResult<T = void> =
   | { ok: true; data: T }
   | { ok: false; message: string; code?: string };
@@ -86,5 +89,16 @@ export async function actualizarCasoAction(
     revalidatePath(`/casos/${casoId}`);
     revalidatePath("/casos");
   }
+  return result;
+}
+
+export async function guardarCuestionarioAction(
+  casoId: number,
+  respuestas: Record<string, string>,
+): Promise<ActionResult<MensajeResponse>> {
+  const result = await withToken((t) =>
+    brokerApi.guardarCuestionario(t, casoId, respuestas),
+  );
+  if (result.ok) revalidatePath(`/casos/${casoId}`);
   return result;
 }

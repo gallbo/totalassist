@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatearFechaLarga } from "@/lib/fecha";
+import { EtapasCobertura } from "@/components/domain/etapas-cobertura";
 import type { CasoPublico } from "@/lib/api/publico";
 
 const ESTATUS_TONO: Record<number, string> = {
@@ -54,6 +55,9 @@ export function SeguimientoCliente({ caso }: { caso: CasoPublico }) {
         </Dato>
         <Dato label="Estado">{caso.direccion.estado ?? "—"}</Dato>
       </dl>
+
+      {/* Etapas del proceso por cobertura (las planea el equipo de Total Claim Assist) */}
+      <EtapasCobertura coberturas={caso.coberturas} />
 
       <section className="flex flex-col gap-3">
         <h2 className="text-brand-navy text-base font-bold">

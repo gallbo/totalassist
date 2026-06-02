@@ -1,35 +1,48 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Download, ExternalLink, FileText, Upload } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  Download,
+  ExternalLink,
+  FileText,
+  Upload,
+} from "lucide-react";
 import { toast } from "sonner";
-import type { DocumentoPublico, GrupoDocumentos } from "@/lib/api/publico";
+import type {
+  DocumentoChecklist,
+  DocumentoPublico,
+  DocumentosResponse,
+} from "@/lib/api/publico";
+import { formatearFechaLarga } from "@/lib/fecha";
 import { subirDocumentoAction } from "../_actions";
 
 const TAMANO_MAX = 10 * 1024 * 1024;
 
 export function DocumentosAsegurado({
   token,
-  grupos,
+  documentos,
 }: {
   token: string;
-  grupos: GrupoDocumentos[];
+  documentos: DocumentosResponse;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [fileInputKey, setFileInputKey] = useState(0);
 
-  const onSubir = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (f.size > TAMANO_MAX) {
+  const subir = (file: File, documentoCasoId?: number) => {
+    if (file.size > TAMANO_MAX) {
       toast.error("El archivo supera el límite de 10 MB.");
       setFileInputKey((k) => k + 1);
       return;
     }
     const fd = new FormData();
-    fd.append("archivo", f);
+    fd.append("archivo", file);
+    if (documentoCasoId) {
+      fd.append("documento_caso_id", String(documentoCasoId));
+    }
     startTransition(async () => {
       const result = await subirDocumentoAction(token, fd);
       setFileInputKey((k) => k + 1);
@@ -42,15 +55,23 @@ export function DocumentosAsegurado({
     });
   };
 
-  const gruposConDocumentos = grupos.filter((g) => g.documentos.length > 0);
+  const gruposConDocumentos = documentos.grupos.filter(
+    (g) => g.documentos.length > 0,
+  );
+  const pendientes = gruposConDocumentos.reduce(
+    (acc, g) =>
+      acc + g.documentos.filter((d) => d.estado === "pendiente").length,
+    0,
+  );
 
   return (
     <section className="flex flex-col gap-4 border-t border-neutral-200 pt-6">
       <div className="flex flex-col gap-1">
         <h2 className="text-brand-navy text-base font-bold">Tus documentos</h2>
         <p className="text-sm text-neutral-600">
-          Aquí ves los documentos que te corresponden y puedes enviar los que
-          tengas a la mano.
+          {pendientes > 0
+            ? `Tienes ${pendientes} documento${pendientes === 1 ? "" : "s"} pendiente${pendientes === 1 ? "" : "s"} de enviar para avanzar con tu reclamación.`
+            : "Aquí ves los documentos de tu reclamación y puedes enviar los que tengas a la mano."}
         </p>
       </div>
 
@@ -64,9 +85,15 @@ export function DocumentosAsegurado({
               <h3 className="text-brand-navy/70 text-xs font-semibold tracking-wide uppercase">
                 {g.cobertura}
               </h3>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {g.documentos.map((d) => (
-                  <DocCard key={d.id} documento={d} />
+                  <ChecklistCard
+                    key={d.id}
+                    documento={d}
+                    disabled={isPending}
+                    fileInputKey={fileInputKey}
+                    onSubir={(file) => subir(file, d.id)}
+                  />
                 ))}
               </div>
             </div>
@@ -74,24 +101,126 @@ export function DocumentosAsegurado({
         </div>
       ) : (
         <p className="text-sm text-neutral-500">
-          Aún no hay documentos. Cuando envíes uno aparecerá aquí.
+          Por ahora no tienes documentos asignados. Tu broker te avisará cuando
+          haga falta algo.
         </p>
       )}
+
+      {documentos.otros.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          <h3 className="text-brand-navy/70 text-xs font-semibold tracking-wide uppercase">
+            Otros documentos que enviaste
+          </h3>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {documentos.otros.map((d) => (
+              <DocCard key={d.id} documento={d} />
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <label className="flex h-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 text-sm text-neutral-600 hover:bg-neutral-50">
         <Upload className="mr-2 h-5 w-5" />
         <span>
-          {isPending ? "Enviando…" : "Enviar un documento (máx 10 MB)"}
+          {isPending ? "Enviando…" : "Enviar otro documento (máx 10 MB)"}
         </span>
         <input
           key={fileInputKey}
           type="file"
           className="sr-only"
           disabled={isPending}
-          onChange={onSubir}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) subir(f);
+          }}
         />
       </label>
     </section>
+  );
+}
+
+function ChecklistCard({
+  documento,
+  disabled,
+  fileInputKey,
+  onSubir,
+}: {
+  documento: DocumentoChecklist;
+  disabled: boolean;
+  fileInputKey: number;
+  onSubir: (file: File) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const entregado = documento.estado === "entregado";
+
+  return (
+    <div
+      className={`flex flex-col gap-2 rounded-lg border bg-white p-3 ${
+        entregado ? "border-green-200" : "border-neutral-200"
+      }`}
+    >
+      <div className="flex items-start gap-2">
+        {entregado ? (
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+        ) : (
+          <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="text-brand-navy text-sm font-medium">
+            {documento.nombre}
+          </div>
+          <div className="mt-0.5 text-xs text-neutral-500">
+            {entregado
+              ? `Entregado${documento.fecha_entrega ? ` el ${formatearFechaLarga(documento.fecha_entrega)}` : ""}`
+              : documento.fecha_compromiso
+                ? `Entrégalo antes del ${formatearFechaLarga(documento.fecha_compromiso)}`
+                : "Pendiente de enviar"}
+          </div>
+          {documento.observaciones ? (
+            <div className="mt-1 text-xs text-neutral-600 italic">
+              {documento.observaciones}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {entregado && documento.archivo?.url ? (
+        <a
+          href={documento.archivo.url}
+          target="_blank"
+          rel="noreferrer"
+          className="text-brand-navy inline-flex w-fit items-center gap-1 rounded-md px-2 py-1 text-xs font-medium hover:bg-neutral-100"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          Ver lo que enviaste
+        </a>
+      ) : null}
+
+      {!entregado ? (
+        <>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => inputRef.current?.click()}
+            className="bg-brand-navy inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            {disabled ? "Enviando…" : "Subir este documento"}
+          </button>
+          <input
+            key={fileInputKey}
+            ref={inputRef}
+            type="file"
+            className="sr-only"
+            disabled={disabled}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onSubir(f);
+            }}
+          />
+        </>
+      ) : null}
+    </div>
   );
 }
 

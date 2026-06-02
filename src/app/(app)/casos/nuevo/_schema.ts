@@ -32,13 +32,19 @@ export const nuevoCasoSchema = z
       .int()
       .positive("Selecciona un tipo de seguro."),
     tipo_siniestro_id: z.coerce.number().int().positive().nullish(),
+    // El número de siniestro es condicional: obligatorio solo cuando el broker
+    // contesta que el siniestro ya se reportó a la aseguradora. Esa validación
+    // cruzada vive en el form (depende del cuestionario), no aquí.
     num_siniestro_poliza: z
       .string()
       .trim()
-      .min(1, "Captura el número de siniestro.")
-      .max(255, "Máximo 255 caracteres."),
+      .max(255, "Máximo 255 caracteres.")
+      .nullish(),
     folio_poliza: z.string().max(100, "Máximo 100 caracteres.").nullish(),
-    fecha_siniestro: z.string().nullish(),
+    fecha_siniestro: z
+      .string()
+      .trim()
+      .min(1, "Captura la fecha del siniestro."),
     monto_estimado: z.coerce.number().min(0).nullish(),
     estado_id: z.coerce.number().int().positive().nullish(),
     ciudad: z.string().nullish(),

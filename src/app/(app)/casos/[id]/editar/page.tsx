@@ -4,6 +4,7 @@ import {
   brokerApi,
   type Aseguradora,
   type CasoDetalle,
+  type CuestionarioPregunta,
   type Estado,
   type TipoSeguro,
 } from "@/lib/api/brokers";
@@ -18,6 +19,7 @@ type Datos =
       aseguradoras: Aseguradora[];
       tiposSeguro: TipoSeguro[];
       estados: Estado[];
+      preguntas: CuestionarioPregunta[];
     }
   | { ok: false; status: number };
 
@@ -37,9 +39,10 @@ export default async function EditarCasoPage({
 
   let datos: Datos;
   try {
-    const [caso, bootstrap] = await Promise.all([
+    const [caso, bootstrap, cuestionario] = await Promise.all([
       brokerApi.getCaso(token, casoId),
       brokerApi.getNuevoCasoBootstrap(token),
+      brokerApi.getCuestionario(token, casoId),
     ]);
     datos = {
       ok: true,
@@ -47,6 +50,7 @@ export default async function EditarCasoPage({
       aseguradoras: bootstrap.aseguradoras,
       tiposSeguro: bootstrap.tipos_seguro,
       estados: bootstrap.estados,
+      preguntas: cuestionario.cuestionario,
     };
   } catch (error) {
     if (error instanceof ApiError) {
@@ -75,6 +79,7 @@ export default async function EditarCasoPage({
         aseguradoras={datos.aseguradoras}
         tiposSeguro={datos.tiposSeguro}
         estados={datos.estados}
+        preguntas={datos.preguntas}
       />
     </PageCard>
   );
