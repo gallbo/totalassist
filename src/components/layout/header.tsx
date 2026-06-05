@@ -16,15 +16,21 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import type { BrokerMe } from "@/lib/api/brokers";
 
 type HeaderProps = {
   session: Session | null;
+  broker?: BrokerMe | null;
 };
 
-export function Header({ session }: HeaderProps) {
+export function Header({ session, broker }: HeaderProps) {
   const [open, setOpen] = useState(false);
-  const userName = session?.user?.name ?? "Broker";
   const userEmail = session?.user?.email ?? "";
+  const nombreCompleto = broker
+    ? [broker.nombre, broker.apellido_paterno].filter(Boolean).join(" ")
+    : "";
+  const userName = nombreCompleto || userEmail || "Broker";
+  const logoUrl = broker?.logo_url ?? null;
 
   return (
     <header>
@@ -50,7 +56,7 @@ export function Header({ session }: HeaderProps) {
               Cerrar sesión
             </span>
           </button>
-          <AgencyBadge name={userName} />
+          <AgencyBadge name={userName} logoUrl={logoUrl} />
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
@@ -75,7 +81,7 @@ export function Header({ session }: HeaderProps) {
 
             <div className="flex flex-1 flex-col gap-6 px-4 py-4">
               <div className="flex items-center gap-3">
-                <AgencyBadge name={userName} />
+                <AgencyBadge name={userName} logoUrl={logoUrl} />
                 <div className="flex flex-col leading-tight">
                   <span className="text-brand-navy text-sm font-semibold">
                     {userName}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -13,23 +13,39 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
+import { SelectInput } from "@/components/ui/select-input";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Button } from "@/components/ui/button";
+import { AccordionSection } from "@/components/ui/accordion";
+import { SelectPill } from "@/components/forms/select-pill";
 import { cn } from "@/lib/utils";
 import type {
   Aseguradora,
   CasoDetalle,
+  CuestionarioPregunta,
   Estado,
   TipoSeguro,
 } from "@/lib/api/brokers";
+import {
+  CuestionarioSecciones,
+  respuestaYaSeReporto,
+  validarCuestionario,
+  type ErroresCuestionario,
+  type RespuestasCuestionario,
+} from "../../../_components/cuestionario-secciones";
 import { nuevoCasoSchema, type NuevoCasoSchema } from "../../../nuevo/_schema";
-import { actualizarCasoAction } from "../../_actions";
+import {
+  actualizarCasoAction,
+  guardarCuestionarioAction,
+} from "../../_actions";
 
 type Props = {
   caso: CasoDetalle;
   aseguradoras: Aseguradora[];
   tiposSeguro: TipoSeguro[];
   estados: Estado[];
+  preguntas: CuestionarioPregunta[];
 };
 
 export function EditarCasoCliente({
@@ -37,15 +53,27 @@ export function EditarCasoCliente({
   aseguradoras,
   tiposSeguro,
   estados,
+  preguntas,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [respuestas, setRespuestas] = useState<RespuestasCuestionario>(() =>
+    Object.fromEntries(
+      preguntas
+        .filter((p) => p.respuesta != null && p.respuesta !== "")
+        .map((p) => [p.pregunta_id, p.respuesta as string]),
+    ),
+  );
+  const [erroresCuestionario, setErroresCuestionario] =
+    useState<ErroresCuestionario>({});
+  const [intentoEnviar, setIntentoEnviar] = useState(false);
 
   const {
     register,
     handleSubmit,
     control,
     watch,
+    setError,
     formState: { errors },
   } = useForm<NuevoCasoSchema>({
     resolver: zodResolver(
@@ -62,11 +90,10 @@ export function EditarCasoCliente({
       correo: caso.correo ?? "",
       telefono: caso.telefono ?? "",
       celular: caso.celular ?? "",
-      // Estos quedan locked desde la UI pero la zod los pide required.
-      // Inyectamos los valores actuales del caso para que la validación pase.
       aseguradora_id: (caso.aseguradora_id ?? 0) as number,
       tipo_seguro_id: (caso.tipo_seguro_id ?? 0) as number,
       tipo_siniestro_id: caso.tipo_siniestro_id ?? null,
+      num_siniestro_poliza: caso.num_siniestro_poliza ?? "",
       folio_poliza: caso.folio_poliza ?? "",
       fecha_siniestro: caso.fecha_siniestro ?? "",
       monto_estimado:
@@ -91,24 +118,59 @@ export function EditarCasoCliente({
   const contactos = useFieldArray({ control, name: "contactos_atencion" });
   const beneficiarios = useFieldArray({ control, name: "beneficiarios" });
 
-  const aseguradoraNombre =
-    aseguradoras.find((a) => a.id === caso.aseguradora_id)?.nombre ??
-    caso.aseguradora ??
-    "—";
-  const tipoSeguroNombre =
-    tiposSeguro.find((t) => t.id === caso.tipo_seguro_id)?.nombre ??
-    caso.tipo_seguro ??
-    "—";
+  const tipoSeguroNombre = useMemo(
+    () =>
+      tiposSeguro.find((t) => t.id === Number(caso.tipo_seguro_id))?.nombre ??
+      caso.tipo_seguro ??
+      null,
+    [tiposSeguro, caso.tipo_seguro_id, caso.tipo_seguro],
+  );
+  const yaSeReporto = respuestaYaSeReporto(preguntas, respuestas);
+
+  const onRespuesta = (preguntaId: number, valor: string) => {
+    setRespuestas((prev) => ({ ...prev, [preguntaId]: valor }));
+    setErroresCuestionario((prev) => {
+      const next = { ...prev };
+      delete next[String(preguntaId)];
+      delete next.seccion_2;
+      return next;
+    });
+  };
 
   const onInvalid = () => {
+    setIntentoEnviar(true);
+    setErroresCuestionario(validarCuestionario(preguntas, respuestas));
     toast.error("Revisa los campos marcados antes de continuar.");
   };
 
   const onSubmit = (data: NuevoCasoSchema) => {
+    setIntentoEnviar(true);
+
+    const erroresQ = validarCuestionario(preguntas, respuestas);
+    const numeroVacio = !data.num_siniestro_poliza?.trim();
+    if (yaSeReporto === "Sí" && numeroVacio) {
+      setError("num_siniestro_poliza", {
+        type: "custom",
+        message:
+          "Captura el número de siniestro: indicaste que ya se reportó a la aseguradora.",
+      });
+    }
+    if (
+      Object.keys(erroresQ).length > 0 ||
+      (yaSeReporto === "Sí" && numeroVacio)
+    ) {
+      setErroresCuestionario(erroresQ);
+      toast.error("Revisa el cuestionario del siniestro antes de continuar.");
+      return;
+    }
+
+    const cuestionarioPayload: Record<string, string> = {};
+    for (const p of preguntas) {
+      cuestionarioPayload[String(p.pregunta_id)] =
+        respuestas[p.pregunta_id]?.trim() ?? "";
+    }
+
     startTransition(async () => {
-      // No mandamos correo, aseguradora_id ni tipo_seguro_id desde la UI:
-      // estos quedan locked en el form. El backend igual los aceptaría si
-      // se decidiera permitir editarlos en el futuro.
       const result = await actualizarCasoAction(caso.id, {
         tipo_persona: data.tipo_persona,
         nombre_asegurado: data.nombre_asegurado || null,
@@ -116,9 +178,13 @@ export function EditarCasoCliente({
         nombre_comercial: data.nombre_comercial || null,
         nombre_representante: data.nombre_representante || null,
         rfc: data.rfc || null,
+        correo: data.correo || null,
         telefono: data.telefono || null,
         celular: data.celular || null,
+        aseguradora_id: data.aseguradora_id,
+        tipo_seguro_id: data.tipo_seguro_id,
         tipo_siniestro_id: data.tipo_siniestro_id ?? null,
+        num_siniestro_poliza: data.num_siniestro_poliza || null,
         folio_poliza: data.folio_poliza || null,
         fecha_siniestro: data.fecha_siniestro || null,
         monto_estimado: data.monto_estimado ?? null,
@@ -139,15 +205,38 @@ export function EditarCasoCliente({
         return;
       }
 
+      // Las respuestas del cuestionario se guardan aparte (endpoint propio).
+      const resultCuestionario = await guardarCuestionarioAction(
+        caso.id,
+        cuestionarioPayload,
+      );
+      if (!resultCuestionario.ok) {
+        toast.error(
+          `El caso se actualizó, pero el cuestionario no se pudo guardar: ${resultCuestionario.message}`,
+        );
+        return;
+      }
+
       toast.success("Caso actualizado.");
       router.push(`/casos/${caso.id}`);
     });
   };
 
+  const errorSeguro = !!(errors.aseguradora_id || errors.folio_poliza);
+  const errorCuestionario =
+    !!errors.fecha_siniestro ||
+    !!errors.num_siniestro_poliza ||
+    Object.keys(erroresCuestionario).length > 0;
+  const errorAsegurado = !!(
+    errors.nombre_asegurado ||
+    errors.nombre_empresa ||
+    errors.correo
+  );
+
   return (
     <form
       onSubmit={handleSubmit(onSubmit, onInvalid)}
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-5"
     >
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <h1 className="text-brand-navy text-xl font-bold">
@@ -155,35 +244,159 @@ export function EditarCasoCliente({
         </h1>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 opacity-60">
-        {(["fisica", "moral"] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            disabled
-            className={cn(
-              "flex h-12 items-center justify-center gap-2 rounded-full text-sm font-semibold",
-              tipoPersona === t
-                ? "bg-brand-navy text-white"
-                : "text-brand-navy/80 bg-blue-50",
+      {/* ── 1. Datos del seguro ── */}
+      <AccordionSection
+        titulo="Datos del seguro"
+        descripcion="Tipo de seguro, aseguradora y póliza"
+        abiertoInicial
+        forzarAbierto={intentoEnviar && errorSeguro}
+        conError={errorSeguro}
+      >
+        <div className="flex flex-wrap gap-3">
+          <Controller
+            control={control}
+            name="tipo_seguro_id"
+            render={({ field, fieldState }) => (
+              <div className="flex flex-col gap-1">
+                <SelectPill
+                  label="Tipo de seguro *"
+                  options={tiposSeguro.map((t) => ({
+                    value: String(t.id),
+                    label: t.nombre,
+                  }))}
+                  value={field.value ? String(field.value) : ""}
+                  onChange={(v) => field.onChange(v ? Number(v) : null)}
+                  invalid={!!fieldState.error}
+                />
+                {fieldState.error && (
+                  <span className="text-xs text-red-600">
+                    {fieldState.error.message}
+                  </span>
+                )}
+              </div>
             )}
+          />
+          <Controller
+            control={control}
+            name="aseguradora_id"
+            render={({ field, fieldState }) => (
+              <div className="flex flex-col gap-1">
+                <SelectPill
+                  label="Aseguradora *"
+                  options={aseguradoras.map((a) => ({
+                    value: String(a.id),
+                    label: a.nombre,
+                  }))}
+                  value={field.value ? String(field.value) : ""}
+                  onChange={(v) => field.onChange(v ? Number(v) : null)}
+                  invalid={!!fieldState.error}
+                />
+                {fieldState.error && (
+                  <span className="text-xs text-red-600">
+                    {fieldState.error.message}
+                  </span>
+                )}
+              </div>
+            )}
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Field
+            label="Folio de la póliza"
+            error={errors.folio_poliza?.message}
           >
-            {t === "fisica" ? "Persona física" : "Persona moral"}
-            {tipoPersona === t && <Lock className="h-3.5 w-3.5" />}
-          </button>
-        ))}
-      </div>
+            <Input {...register("folio_poliza")} />
+          </Field>
+          <Field label="Monto estimado (MXN)">
+            <Controller
+              control={control}
+              name="monto_estimado"
+              render={({ field, fieldState }) => (
+                <MoneyInput
+                  name={field.name}
+                  value={field.value ?? null}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  invalid={!!fieldState.error}
+                />
+              )}
+            />
+          </Field>
+        </div>
+      </AccordionSection>
 
-      <section className="flex flex-col gap-4">
-        <h2 className="text-brand-navy text-base font-bold">
-          {tipoPersona === "fisica" ? "Información personal" : "Información"}
-        </h2>
-
-        <CamposLocked
-          aseguradora={aseguradoraNombre}
-          tipoSeguro={tipoSeguroNombre}
-          correo={caso.correo}
+      {/* ── 2. Cuestionario del siniestro ── */}
+      <AccordionSection
+        titulo="Cuestionario del siniestro"
+        descripcion="Los detalles del siniestro que ayudan a procesar la reclamación"
+        abiertoInicial
+        forzarAbierto={intentoEnviar && errorCuestionario}
+        conError={intentoEnviar && errorCuestionario}
+      >
+        <CuestionarioSecciones
+          preguntas={preguntas}
+          tipoSeguroNombre={tipoSeguroNombre}
+          respuestas={respuestas}
+          onRespuesta={onRespuesta}
+          errores={erroresCuestionario}
+          disabled={isPending}
+          camposCaso={
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field
+                label="Fecha del siniestro *"
+                error={errors.fecha_siniestro?.message}
+              >
+                <Input type="date" {...register("fecha_siniestro")} />
+              </Field>
+              <Field
+                label={
+                  yaSeReporto === "Sí"
+                    ? "Número de siniestro *"
+                    : "Número de siniestro"
+                }
+                error={errors.num_siniestro_poliza?.message}
+              >
+                <Input
+                  placeholder={
+                    yaSeReporto === "No"
+                      ? "Aún no se reporta a la aseguradora"
+                      : ""
+                  }
+                  disabled={yaSeReporto === "No"}
+                  {...register("num_siniestro_poliza")}
+                />
+              </Field>
+            </div>
+          }
         />
+      </AccordionSection>
+
+      {/* ── 3. Datos del asegurado ── */}
+      <AccordionSection
+        titulo="Datos del asegurado"
+        descripcion="A nombre de quién es la póliza"
+        abiertoInicial
+        forzarAbierto={intentoEnviar && errorAsegurado}
+        conError={errorAsegurado}
+      >
+        <div className="grid grid-cols-2 gap-3 opacity-60">
+          {(["fisica", "moral"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              disabled
+              className={cn(
+                "flex h-12 items-center justify-center gap-2 rounded-full text-sm font-semibold",
+                tipoPersona === t
+                  ? "bg-brand-navy text-white"
+                  : "text-brand-navy/80 bg-blue-50",
+              )}
+            >
+              {t === "fisica" ? "Persona física" : "Persona moral"}
+              {tipoPersona === t && <Lock className="h-3.5 w-3.5" />}
+            </button>
+          ))}
+        </div>
 
         {tipoPersona === "fisica" ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -195,6 +408,9 @@ export function EditarCasoCliente({
             </Field>
             <Field label="RFC">
               <Input {...register("rfc")} />
+            </Field>
+            <Field label="Correo" error={errors.correo?.message}>
+              <Input type="email" {...register("correo")} />
             </Field>
             <Field label="Teléfono">
               <Input type="tel" {...register("telefono")} />
@@ -222,40 +438,23 @@ export function EditarCasoCliente({
             <Field label="Nombre">
               <Input {...register("nombre_representante")} />
             </Field>
-            <Field label="Teléfono">
-              <Input type="tel" {...register("telefono")} />
-            </Field>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field label="Correo" error={errors.correo?.message}>
+                <Input type="email" {...register("correo")} />
+              </Field>
+              <Field label="Teléfono">
+                <Input type="tel" {...register("telefono")} />
+              </Field>
+            </div>
           </>
         )}
-      </section>
+      </AccordionSection>
 
-      <section className="flex flex-col gap-4 border-t border-neutral-200 pt-6">
-        <h2 className="text-brand-navy text-base font-bold">
-          Datos del siniestro
-        </h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Field
-            label="Folio de la póliza"
-            error={errors.folio_poliza?.message}
-          >
-            <Input placeholder="POL-2026-0001" {...register("folio_poliza")} />
-          </Field>
-          <Field label="Fecha del siniestro">
-            <Input type="date" {...register("fecha_siniestro")} />
-          </Field>
-          <Field label="Monto estimado (MXN)">
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              {...register("monto_estimado")}
-            />
-          </Field>
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-4 border-t border-neutral-200 pt-6">
-        <h2 className="text-brand-navy text-base font-bold">Dirección</h2>
+      {/* ── 4. Dirección ── */}
+      <AccordionSection
+        titulo="Dirección"
+        descripcion="Domicilio del asegurado (opcional)"
+      >
         <Field label="Domicilio">
           <Input {...register("domicilio")} />
         </Field>
@@ -264,24 +463,18 @@ export function EditarCasoCliente({
             <Controller
               control={control}
               name="estado_id"
-              render={({ field }) => (
-                <select
-                  {...field}
+              render={({ field, fieldState }) => (
+                <SelectInput
+                  name={field.name}
                   value={field.value ?? ""}
-                  onChange={(e) =>
-                    field.onChange(
-                      e.target.value ? Number(e.target.value) : null,
-                    )
-                  }
-                  className="border-input bg-background text-foreground h-11 rounded-md border px-3 text-sm"
-                >
-                  <option value="">Selecciona…</option>
-                  {estados.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.nombre}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(v) => field.onChange(v ? Number(v) : null)}
+                  onBlur={field.onBlur}
+                  invalid={!!fieldState.error}
+                  options={estados.map((e) => ({
+                    value: e.id,
+                    label: e.nombre,
+                  }))}
+                />
               )}
             />
           </Field>
@@ -292,12 +485,14 @@ export function EditarCasoCliente({
             <Input {...register("codigo_postal")} />
           </Field>
         </div>
-      </section>
+      </AccordionSection>
 
-      <section className="border-t border-neutral-200 pt-6">
-        <h3 className="text-brand-navy mb-3 text-sm font-semibold">
-          Contactos de atención (opcional)
-        </h3>
+      {/* ── 5. Contactos de atención ── */}
+      <AccordionSection
+        titulo="Contactos de atención"
+        descripcion="Personas con quienes coordinar el caso (opcional)"
+        abiertoInicial={caso.contactos_atencion.length > 0}
+      >
         <div className="flex flex-col gap-3">
           {contactos.fields.map((f, i) => (
             <div
@@ -338,12 +533,14 @@ export function EditarCasoCliente({
             Agregar contacto
           </BrandButton>
         </div>
-      </section>
+      </AccordionSection>
 
-      <section className="border-t border-neutral-200 pt-6">
-        <h3 className="text-brand-navy mb-3 text-sm font-semibold">
-          Beneficiarios (opcional)
-        </h3>
+      {/* ── 6. Beneficiarios ── */}
+      <AccordionSection
+        titulo="Beneficiarios"
+        descripcion="Beneficiarios de la póliza (opcional)"
+        abiertoInicial={caso.beneficiarios.length > 0}
+      >
         <div className="flex flex-col gap-3">
           {beneficiarios.fields.map((f, i) => (
             <div
@@ -392,7 +589,7 @@ export function EditarCasoCliente({
             Agregar beneficiario
           </BrandButton>
         </div>
-      </section>
+      </AccordionSection>
 
       <div className="flex flex-wrap justify-end gap-3 border-t border-neutral-200 pt-6">
         <Button
@@ -431,41 +628,5 @@ function Field({
       {children}
       {error && <span className="text-xs text-red-600">{error}</span>}
     </label>
-  );
-}
-
-function CamposLocked({
-  aseguradora,
-  tipoSeguro,
-  correo,
-}: {
-  aseguradora: string;
-  tipoSeguro: string;
-  correo: string | null;
-}) {
-  return (
-    <div className="grid grid-cols-1 gap-3 rounded-lg bg-blue-50/40 p-4 md:grid-cols-3">
-      <Locked label="Aseguradora" value={aseguradora} />
-      <Locked label="Tipo de seguro" value={tipoSeguro} />
-      <Locked label="Correo" value={correo ?? "—"} />
-      <p className="text-xs text-neutral-500 md:col-span-3">
-        Estos datos no se pueden cambiar desde aquí. Si necesitas modificarlos,
-        contáctanos.
-      </p>
-    </div>
-  );
-}
-
-function Locked({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="flex items-center gap-1 text-xs text-neutral-600">
-        <Lock className="h-3 w-3" />
-        {label}
-      </span>
-      <div className="text-brand-navy truncate rounded-md bg-white px-3 py-2 text-sm ring-1 ring-neutral-200">
-        {value}
-      </div>
-    </div>
   );
 }

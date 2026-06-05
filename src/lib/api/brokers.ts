@@ -38,6 +38,43 @@ export type ContactoAtencion = {
   telefono: string;
 };
 
+export type Promotoria = {
+  id?: number;
+  nombre_promotor: string;
+  nombre_promotoria: string;
+  correo_promotor?: string | null;
+  telefono_promotor?: string | null;
+};
+
+export const REDES_SOCIALES_VALORES = [
+  "facebook",
+  "instagram",
+  "linkedin",
+  "x",
+  "tiktok",
+  "youtube",
+  "whatsapp",
+  "sitio_web",
+  "otra",
+] as const;
+
+export type RedSocialCodigo = (typeof REDES_SOCIALES_VALORES)[number];
+
+export type RedSocial = {
+  id?: number;
+  red_social: RedSocialCodigo;
+  usuario: string;
+};
+
+export type BrokerMe = {
+  id: number;
+  nombre: string;
+  apellido_paterno: string;
+  apellido_materno?: string | null;
+  email: string;
+  logo_url?: string | null;
+};
+
 export type PerfilBroker = {
   id: number;
   nombre: string;
@@ -46,9 +83,12 @@ export type PerfilBroker = {
   email: string;
   telefono?: string | null;
   cedula: string;
+  rfc?: string | null;
   logo_url?: string | null;
   direcciones: DireccionBroker[];
   contactos_atencion: ContactoAtencion[];
+  promotorias: Promotoria[];
+  redes_sociales: RedSocial[];
 };
 
 export type ActualizarPerfilInput = {
@@ -56,8 +96,11 @@ export type ActualizarPerfilInput = {
   apellido_paterno?: string;
   apellido_materno?: string | null;
   telefono?: string | null;
+  rfc?: string | null;
   direcciones?: DireccionBroker[];
   contactos_atencion?: ContactoAtencion[];
+  promotorias?: Promotoria[];
+  redes_sociales?: RedSocial[];
 };
 
 export type CambiarPasswordInput = {
@@ -122,6 +165,7 @@ export type CasoResumen = {
   id: number;
   folio: string | null;
   folio_poliza: string | null;
+  num_siniestro_poliza: string | null;
   nombre: string | null;
   aseguradora: string | null;
   aseguradora_id: number | null;
@@ -131,6 +175,26 @@ export type CasoResumen = {
   fecha_siniestro: string | null;
   monto_estimado: string | number | null;
   created_at: string | null;
+};
+
+export type EtapaCobertura = {
+  nombre: string | null;
+  estatus: "pendiente" | "activa" | "finalizada";
+};
+
+export type ResultadoCobertura = {
+  tipo: "con_pago" | "sin_pago" | "interrumpida";
+  descripcion: string;
+  monto: number | null;
+  fecha: string | null;
+};
+
+export type CoberturaCaso = {
+  nombre: string | null;
+  etapa_actual: string | null;
+  ultima_actividad: string | null;
+  resultado: ResultadoCobertura | null;
+  etapas: EtapaCobertura[];
 };
 
 export type CasoDetalle = CasoResumen & {
@@ -150,6 +214,7 @@ export type CasoDetalle = CasoResumen & {
   contactos_atencion: CasoContactoAtencion[];
   beneficiarios: CasoBeneficiario[];
   archivos: CasoArchivo[];
+  coberturas: CoberturaCaso[];
   paquete: { id: number; descripcion: string | null } | null;
 };
 
@@ -174,6 +239,7 @@ export type RegistrarCasoInput = {
   aseguradora_id?: number | null;
   tipo_seguro_id?: number | null;
   tipo_siniestro_id?: number | null;
+  num_siniestro_poliza?: string | null;
   folio_poliza?: string | null;
   fecha_siniestro?: string | null;
   monto_estimado?: number | null;
@@ -183,9 +249,36 @@ export type RegistrarCasoInput = {
   codigo_postal?: string | null;
   contactos_atencion?: CasoContactoAtencion[];
   beneficiarios?: CasoBeneficiario[];
+  // Respuestas del cuestionario del siniestro { pregunta_id: respuesta }.
+  // Obligatorio al crear: Skipper valida Sección I completa + al menos 1 de Sección II.
+  cuestionario?: Record<string, string>;
 };
 
 export type ActualizarCasoInput = Partial<RegistrarCasoInput>;
+
+export type CuestionarioTipoPregunta =
+  | "si_no"
+  | "escala"
+  | "opciones"
+  | "fecha"
+  | "numero"
+  | "texto"
+  | "texto_largo";
+
+export type CuestionarioPregunta = {
+  pregunta_id: number;
+  texto: string;
+  tipo: CuestionarioTipoPregunta;
+  opciones: string[];
+  // Sección I = obligatorias del formato; Sección II = al menos una contestada.
+  seccion: number;
+  obligatoria: boolean;
+  respuesta: string | null;
+};
+
+export type CuestionarioCaso = {
+  cuestionario: CuestionarioPregunta[];
+};
 
 export type RegistrarCasoResponse = {
   id: number;
@@ -196,6 +289,37 @@ export type RegistrarCasoResponse = {
   estatus: number;
   created_at: string | null;
   paquete: { id: number; casos_restantes: number };
+};
+
+export type CompartirCasoResponse = {
+  url: string;
+  expires_at: string | null;
+  correo_enviado: boolean;
+};
+
+export type FeedbackResumen = {
+  promedio: number;
+  total: number;
+};
+
+export type FeedbackComentario = {
+  id: number;
+  calificacion: number;
+  comentarios: string | null;
+  created_at: string | null;
+  caso: {
+    id: number;
+    folio: string | null;
+    nombre_asegurado_abreviado: string | null;
+  };
+};
+
+export type FeedbackLista = {
+  data: FeedbackComentario[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
 };
 
 export type ListarCasosParams = {
@@ -217,6 +341,8 @@ export type NuevoCasoBootstrap = {
     fecha_expiracion: string | null;
     descripcion: string | null;
   } | null;
+  // Preguntas del cuestionario del broker por ramo (key = tipo_seguro_id).
+  cuestionarios: Record<string, CuestionarioPregunta[]>;
 };
 
 export type DashboardData = {
@@ -227,7 +353,6 @@ export type DashboardData = {
   };
   casos_counts: {
     en_proceso: number;
-    indemnizado: number;
     interrumpido: number;
     finalizado: number;
     total: number;
@@ -285,6 +410,27 @@ export const brokerApi = {
     );
   },
 
+  // Usa fetch nativo (en lugar de axios) para aprovechar el cache de Next con
+  // tags. Se invalida con `revalidateTag("broker-me")` desde las server actions
+  // que tocan nombre, apellidos o logo. Resultado: 1 fetch al primer render
+  // post-login y 0 en navegaciones siguientes hasta que el broker cambie algo.
+  async getMe(token: string): Promise<BrokerMe> {
+    const res = await fetch(`${baseURL}/api/brokers/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+      next: { tags: ["broker-me"], revalidate: 300 },
+    });
+    if (!res.ok) {
+      throw new ApiError(
+        "No pudimos cargar tu sesión. Intenta recargar la página.",
+        res.status,
+      );
+    }
+    return (await res.json()) as BrokerMe;
+  },
+
   actualizarPerfil(token: string, cambios: ActualizarPerfilInput) {
     return request<PerfilBroker>(
       {
@@ -340,6 +486,16 @@ export const brokerApi = {
     }
 
     return (await res.json()) as PerfilBroker;
+  },
+
+  eliminarLogo(token: string) {
+    return request<PerfilBroker>(
+      {
+        method: "DELETE",
+        url: "/api/brokers/perfil/logo",
+      },
+      token,
+    );
   },
 
   logout(token: string) {
@@ -435,6 +591,28 @@ export const brokerApi = {
     );
   },
 
+  getCuestionario(token: string, casoId: number) {
+    return request<CuestionarioCaso>(
+      { method: "GET", url: `/api/brokers/casos/${casoId}/cuestionario` },
+      token,
+    );
+  },
+
+  guardarCuestionario(
+    token: string,
+    casoId: number,
+    respuestas: Record<string, string>,
+  ) {
+    return request<MensajeResponse>(
+      {
+        method: "POST",
+        url: `/api/brokers/casos/${casoId}/cuestionario`,
+        data: { respuestas },
+      },
+      token,
+    );
+  },
+
   async subirArchivoCaso(
     token: string,
     casoId: number,
@@ -494,6 +672,41 @@ export const brokerApi = {
       {
         method: "DELETE",
         url: `/api/brokers/casos/${casoId}/archivos/${archivoId}`,
+      },
+      token,
+    );
+  },
+
+  getFeedbackResumen(token: string) {
+    return request<FeedbackResumen>(
+      { method: "GET", url: "/api/brokers/feedback/resumen" },
+      token,
+    );
+  },
+
+  getFeedbackLista(
+    token: string,
+    params: { page?: number; per_page?: number } = {},
+  ) {
+    return request<FeedbackLista>(
+      { method: "GET", url: "/api/brokers/feedback", params },
+      token,
+    );
+  },
+
+  compartirCaso(
+    token: string,
+    casoId: number,
+    opts: { regenerar?: boolean; enviar_correo?: boolean } = {},
+  ) {
+    return request<CompartirCasoResponse>(
+      {
+        method: "POST",
+        url: `/api/brokers/casos/${casoId}/compartir`,
+        data: {
+          regenerar: opts.regenerar ?? false,
+          enviar_correo: opts.enviar_correo ?? false,
+        },
       },
       token,
     );

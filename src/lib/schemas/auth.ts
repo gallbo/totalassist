@@ -16,7 +16,7 @@ const cedulaPolicy = z
       .string()
       .regex(
         /^(?:[A-Z]\d{6}|\d{5})$/,
-        "La cédula debe ser una letra seguida de 6 dígitos (ej. H377848) o 5 dígitos si es provisional.",
+        "La cédula debe ser una letra seguida de 6 dígitos o 5 dígitos si es provisional.",
       ),
   );
 

@@ -7,7 +7,7 @@ const publicRoutes = [
   "/recuperar-acceso",
   "/restablecer",
 ];
-const sharedRoutes = ["/ayuda", "/condiciones", "/privacidad"];
+const sharedRoutes = ["/ayuda", "/condiciones", "/privacidad", "/seguimiento"];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
@@ -36,6 +36,6 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.svg|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.webp|.*\\.ico).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.svg|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.webp|.*\\.ico).*)",
   ],
 };

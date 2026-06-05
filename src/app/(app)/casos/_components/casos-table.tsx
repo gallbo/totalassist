@@ -7,14 +7,14 @@ import { ChevronRight, Plus, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { BrandButton } from "@/components/ui/brand-button";
 import { cn } from "@/lib/utils";
+import { formatearFechaLarga } from "@/lib/fecha";
 import type { CasoResumen, ListaCasos } from "@/lib/api/brokers";
 
 const ESTATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "todos", label: "Todos" },
-  { value: "1", label: "En proceso" },
-  { value: "2", label: "Indemnizado" },
-  { value: "3", label: "Interrumpido" },
-  { value: "4", label: "Finalizado" },
+  { value: "0", label: "En proceso" },
+  { value: "1", label: "Interrumpido" },
+  { value: "3", label: "Finalizado" },
 ];
 
 type Props = {
@@ -221,7 +221,7 @@ function Fila({ caso, index }: { caso: CasoResumen; index: number }) {
       <td className="px-4 py-4 text-neutral-600">{caso.aseguradora ?? "—"}</td>
       <td className="px-4 py-4 text-neutral-600">{caso.tipo_seguro ?? "—"}</td>
       <td className="px-4 py-4 text-neutral-600">
-        {caso.fecha_siniestro ?? "—"}
+        {formatearFechaLarga(caso.fecha_siniestro)}
       </td>
       <td className="px-4 py-4">
         <EstatusBadge estatus={caso.estatus_caso} />
@@ -235,10 +235,9 @@ function EstatusBadge({ estatus }: { estatus: number }) {
     number,
     { label: string; tone: "info" | "success" | "danger" }
   > = {
-    1: { label: "En proceso", tone: "info" },
-    2: { label: "Indemnizado", tone: "success" },
-    3: { label: "Interrumpido", tone: "danger" },
-    4: { label: "Finalizado", tone: "success" },
+    0: { label: "En proceso", tone: "info" },
+    1: { label: "Interrumpido", tone: "danger" },
+    3: { label: "Finalizado", tone: "success" },
   };
   const c = config[estatus] ?? {
     label: `Estatus ${estatus}`,

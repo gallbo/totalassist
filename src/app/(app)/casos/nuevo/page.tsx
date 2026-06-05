@@ -3,6 +3,7 @@ import { PageCard } from "@/components/layout/page-card";
 import {
   brokerApi,
   type Aseguradora,
+  type CuestionarioPregunta,
   type Estado,
   type PaqueteContratado,
   type TipoSeguro,
@@ -18,6 +19,7 @@ type Datos =
       tiposSeguro: TipoSeguro[];
       estados: Estado[];
       paqueteActivo: PaqueteContratado | null;
+      cuestionarios: Record<string, CuestionarioPregunta[]>;
     }
   | { ok: false };
 
@@ -53,6 +55,7 @@ export default async function NuevoCasoPage() {
       tiposSeguro: bootstrap.tipos_seguro,
       estados: bootstrap.estados,
       paqueteActivo,
+      cuestionarios: bootstrap.cuestionarios ?? {},
     };
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
@@ -78,6 +81,7 @@ export default async function NuevoCasoPage() {
         tiposSeguro={datos.tiposSeguro}
         estados={datos.estados}
         paqueteActivo={datos.paqueteActivo}
+        cuestionarios={datos.cuestionarios}
       />
     </PageCard>
   );

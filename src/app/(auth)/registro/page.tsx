@@ -127,7 +127,6 @@ export default function RegistroPage() {
         >
           <Input
             id="cedula"
-            placeholder="H377848"
             autoCapitalize="characters"
             disabled={submitting}
             {...register("cedula")}

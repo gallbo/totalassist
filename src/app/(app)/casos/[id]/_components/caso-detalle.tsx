@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ClipboardList,
   Download,
   ExternalLink,
   File as FileIcon,
@@ -16,21 +17,34 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { EtapasCobertura } from "@/components/domain/etapas-cobertura";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import type { CasoArchivo, CasoDetalle } from "@/lib/api/brokers";
+import { formatearFechaLarga } from "@/lib/fecha";
+import type {
+  CasoArchivo,
+  CasoDetalle,
+  CuestionarioPregunta,
+} from "@/lib/api/brokers";
 import { borrarArchivoCasoAction, subirArchivoCasoAction } from "../_actions";
+import { CompartirCasoModal } from "./compartir-caso-modal";
 
 const TAMANO_MAX = 10 * 1024 * 1024;
 
 const ESTATUS_LABELS: Record<number, string> = {
-  1: "En proceso",
-  2: "Indemnizado",
-  3: "Interrumpido",
-  4: "Finalizado",
+  0: "En proceso",
+  1: "Interrumpido",
+  3: "Finalizado",
 };
 
-export function CasoDetalleVista({ caso }: { caso: CasoDetalle }) {
+export function CasoDetalleVista({
+  caso,
+  preguntas = [],
+}: {
+  caso: CasoDetalle;
+  preguntas?: CuestionarioPregunta[];
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [borrandoId, setBorrandoId] = useState<number | null>(null);
@@ -78,18 +92,22 @@ export function CasoDetalleVista({ caso }: { caso: CasoDetalle }) {
         <h1 className="text-brand-navy text-xl font-bold">
           {caso.folio ? `Folio ${caso.folio}` : `Caso #${caso.id}`}
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="text-state-info text-base font-semibold">
             {ESTATUS_LABELS[caso.estatus_caso] ??
               `Estatus ${caso.estatus_caso}`}
           </span>
-          <Button
-            variant="outline"
-            className="text-brand-navy h-9 rounded-full bg-white px-4 ring-1 ring-neutral-200 hover:bg-neutral-50"
-            render={<Link href={`/casos/${caso.id}/editar`} />}
-          >
-            <Pencil className="mr-1.5 h-3.5 w-3.5" /> Editar
-          </Button>
+          <Tooltip label="Editar">
+            <Button
+              variant="outline"
+              aria-label="Editar"
+              className="text-brand-navy inline-flex size-9 items-center justify-center rounded-full bg-white p-0 ring-1 ring-neutral-200 hover:bg-neutral-50"
+              render={<Link href={`/casos/${caso.id}/editar`} />}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </Tooltip>
+          <CompartirCasoModal casoId={caso.id} correoCliente={caso.correo} />
         </div>
       </div>
 
@@ -100,7 +118,12 @@ export function CasoDetalleVista({ caso }: { caso: CasoDetalle }) {
         <Dato label="Aseguradora">{caso.aseguradora ?? "—"}</Dato>
         <Dato label="Tipo de seguro">{caso.tipo_seguro ?? "—"}</Dato>
         <Dato label="Folio de la póliza">{caso.folio_poliza ?? "—"}</Dato>
-        <Dato label="Fecha del siniestro">{caso.fecha_siniestro ?? "—"}</Dato>
+        <Dato label="Fecha del siniestro">
+          {formatearFechaLarga(caso.fecha_siniestro)}
+        </Dato>
+        <Dato label="Número de siniestro">
+          {caso.num_siniestro_poliza ?? "Aún no se reporta"}
+        </Dato>
         <Dato label="Monto estimado">
           {caso.monto_estimado != null
             ? `$${Number(caso.monto_estimado).toLocaleString("es-MX")}`
@@ -108,11 +131,68 @@ export function CasoDetalleVista({ caso }: { caso: CasoDetalle }) {
         </Dato>
         <Dato label="Estado">{caso.estado ?? "—"}</Dato>
         <Dato label="Paquete">{caso.paquete?.descripcion ?? "—"}</Dato>
+        <Dato label="Fecha de registro">
+          {formatearFechaLarga(caso.created_at)}
+        </Dato>
       </dl>
+
+      {/* Etapas del proceso por cobertura (las planea el equipo de Total Claim Assist) */}
+      <EtapasCobertura coberturas={caso.coberturas} />
+
+      {/* Cuestionario del siniestro: las respuestas se muestran aquí mismo (read-only);
+          se editan con el botón de editar (lápiz) de la cabecera del caso. */}
+      <section className="bg-brand-navy/[0.03] flex flex-col gap-4 rounded-xl border border-neutral-200 p-4">
+        <div className="flex items-start gap-3">
+          <ClipboardList className="text-brand-navy mt-0.5 h-5 w-5 shrink-0" />
+          <div>
+            <h2 className="text-brand-navy text-base font-bold">
+              Cuestionario del siniestro
+            </h2>
+            <p className="text-sm text-neutral-600">
+              Los detalles del siniestro que capturaste al registrar el caso.
+            </p>
+          </div>
+        </div>
+
+        {preguntas.length > 0 ? (
+          <div className="flex flex-col gap-4">
+            {[1, 2].map((seccion) => {
+              const delGrupo = preguntas.filter((p) => p.seccion === seccion);
+              if (delGrupo.length === 0) return null;
+              return (
+                <div key={seccion} className="flex flex-col gap-2">
+                  <h3 className="text-brand-navy/70 text-xs font-semibold tracking-wide uppercase">
+                    {seccion === 1
+                      ? "Sección I · Información del siniestro"
+                      : "Sección II · Detalles del siniestro"}
+                  </h3>
+                  <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
+                    {delGrupo.map((p) => (
+                      <div
+                        key={p.pregunta_id}
+                        className="flex flex-col gap-0.5 border-b border-neutral-100 pb-2"
+                      >
+                        <dt className="text-xs text-neutral-600">{p.texto}</dt>
+                        <dd className="text-brand-navy text-sm font-medium">
+                          {p.respuesta?.trim() || "—"}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-neutral-500">
+            Este caso aún no tiene cuestionario contestado.
+          </p>
+        )}
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-brand-navy text-base font-bold">
-          Información del asegurado
+          Información general
         </h2>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {caso.tipo_persona === "fisica" ? (
@@ -133,6 +213,7 @@ export function CasoDetalleVista({ caso }: { caso: CasoDetalle }) {
           <Dato label="RFC">{caso.rfc ?? "—"}</Dato>
           <Dato label="Correo">{caso.correo ?? "—"}</Dato>
           <Dato label="Teléfono">{caso.telefono ?? "—"}</Dato>
+          <Dato label="Celular">{caso.celular ?? "—"}</Dato>
         </div>
       </section>
 

@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { getServerAccessToken } from "@/lib/auth-tokens";
 import { ApiError } from "@/lib/api/client";
 import {
@@ -30,7 +30,19 @@ async function withToken<T>(
     return { ok: true, data };
   } catch (error) {
     if (error instanceof ApiError) {
-      return { ok: false, message: error.message, code: error.code };
+      // En errores de validacion, el mensaje generico ("Algunos datos no son
+      // validos") no le dice al broker que corregir. Si vienen errores por
+      // campo, exponemos el primero — los Form Requests ya devuelven mensajes
+      // amigables en espanol.
+      const primerErrorDeCampo =
+        error.code === "validacion" && error.fieldErrors
+          ? Object.values(error.fieldErrors)[0]?.[0]
+          : undefined;
+      return {
+        ok: false,
+        message: primerErrorDeCampo ?? error.message,
+        code: error.code,
+      };
     }
     return {
       ok: false,
@@ -44,7 +56,12 @@ export async function actualizarPerfilAction(
   input: ActualizarPerfilInput,
 ): Promise<ActionResult<PerfilBroker>> {
   const result = await withToken((t) => brokerApi.actualizarPerfil(t, input));
-  if (result.ok) revalidatePath("/perfil");
+  if (result.ok) {
+    revalidatePath("/perfil");
+    // El header lee /me con cache; invalidar el tag fuerza un refetch en la
+    // proxima navegacion para que nombre y apellidos se actualicen.
+    updateTag("broker-me");
+  }
   return result;
 }
 
@@ -62,6 +79,21 @@ export async function subirLogoAction(
     return { ok: false, message: "Selecciona un archivo válido." };
   }
   const result = await withToken((t) => brokerApi.subirLogo(t, file));
-  if (result.ok) revalidatePath("/perfil");
+  if (result.ok) {
+    revalidatePath("/perfil");
+    // Invalida el cache del header para que el avatar se sincronice.
+    updateTag("broker-me");
+  }
+  return result;
+}
+
+export async function eliminarLogoAction(): Promise<
+  ActionResult<PerfilBroker>
+> {
+  const result = await withToken((t) => brokerApi.eliminarLogo(t));
+  if (result.ok) {
+    revalidatePath("/perfil");
+    updateTag("broker-me");
+  }
   return result;
 }

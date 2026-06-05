@@ -14,7 +14,6 @@ export function EstadoCasos({ counts }: { counts: Counts }) {
   const max = Math.max(
     counts.en_proceso,
     counts.interrumpido,
-    counts.indemnizado,
     counts.finalizado,
     1,
   );
@@ -31,12 +30,6 @@ export function EstadoCasos({ counts }: { counts: Counts }) {
       value: counts.interrumpido,
       color: "text-state-danger",
       icon: XCircle,
-    },
-    {
-      label: "Indemnizado",
-      value: counts.indemnizado,
-      color: "text-state-success",
-      icon: CheckCircle2,
     },
     {
       label: "Finalizado",

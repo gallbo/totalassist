@@ -2,11 +2,16 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowDown, ArrowUp, FileText, Star } from "lucide-react";
 import { BrandButton } from "@/components/ui/brand-button";
-import { brokerApi, type DashboardData } from "@/lib/api/brokers";
+import {
+  brokerApi,
+  type DashboardData,
+  type FeedbackResumen,
+} from "@/lib/api/brokers";
 import { ApiError } from "@/lib/api/client";
 import { getServerAccessToken } from "@/lib/auth-tokens";
 import { CounterCard } from "./_components/counter-card";
 import { EstadoCasos } from "./_components/estado-casos";
+import { FeedbackClientesCard } from "./_components/feedback-clientes-card";
 import { RegistroCasosChart } from "./_components/registro-casos-chart";
 
 export default async function DashboardPage() {
@@ -16,8 +21,15 @@ export default async function DashboardPage() {
   }
 
   let data: DashboardData | null = null;
+  let feedback: FeedbackResumen = { promedio: 0, total: 0 };
   try {
-    data = await brokerApi.getDashboard(token);
+    [data, feedback] = await Promise.all([
+      brokerApi.getDashboard(token),
+      brokerApi.getFeedbackResumen(token).catch(() => ({
+        promedio: 0,
+        total: 0,
+      })),
+    ]);
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       redirect("/login");
@@ -71,6 +83,11 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[5fr_7fr]">
         <div className="flex flex-col gap-5">
+          <FeedbackClientesCard
+            promedio={feedback.promedio}
+            total={feedback.total}
+          />
+
           <section className="flex flex-col gap-4 rounded-2xl bg-white p-5 ring-1 ring-neutral-200">
             <header className="flex items-start justify-between">
               <div>
