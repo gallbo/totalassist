@@ -67,7 +67,7 @@ export default function RecuperarAccesoPage() {
 
       <div className="flex justify-center">
         <BrandButton type="submit" disabled={submitting}>
-          {submitting ? "Enviando..." : "Reestablecer contraseña"}
+          {submitting ? "Enviando..." : "Restablecer contraseña"}
         </BrandButton>
       </div>
 
