@@ -3,16 +3,20 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { IndicadorRequerido } from "@/components/ui/indicador-requerido";
 
 // Acordeón simple para seccionar formularios largos. Cada sección controla su
 // estado abierto/cerrado; `forzarAbierto` permite al padre abrir una sección
-// cuando tiene errores de validación.
+// cuando tiene errores de validación. `obligatorio` pinta el indicador
+// amarillo/azul en el header; `nota` muestra un texto corto a su izquierda.
 export function AccordionSection({
   titulo,
   descripcion,
   abiertoInicial = false,
   forzarAbierto = false,
   conError = false,
+  obligatorio,
+  nota,
   children,
 }: {
   titulo: string;
@@ -20,6 +24,8 @@ export function AccordionSection({
   abiertoInicial?: boolean;
   forzarAbierto?: boolean;
   conError?: boolean;
+  obligatorio?: boolean;
+  nota?: string;
   children: React.ReactNode;
 }) {
   const [abierto, setAbierto] = useState(abiertoInicial);
@@ -51,12 +57,22 @@ export function AccordionSection({
             <span className="text-sm text-neutral-600">{descripcion}</span>
           ) : null}
         </span>
-        <ChevronDown
-          className={cn(
-            "text-brand-navy/60 h-5 w-5 shrink-0 transition-transform",
-            visible && "rotate-180",
-          )}
-        />
+        <span className="flex shrink-0 items-center gap-2 sm:gap-3">
+          {nota ? (
+            <span className="hidden text-xs text-neutral-500 sm:block">
+              {nota}
+            </span>
+          ) : null}
+          {obligatorio !== undefined ? (
+            <IndicadorRequerido obligatorio={obligatorio} />
+          ) : null}
+          <ChevronDown
+            className={cn(
+              "text-brand-navy/60 h-5 w-5 transition-transform",
+              visible && "rotate-180",
+            )}
+          />
+        </span>
       </button>
       {visible ? (
         <div className="flex flex-col gap-4 border-t border-neutral-100 px-4 pt-4 pb-5 sm:px-5">

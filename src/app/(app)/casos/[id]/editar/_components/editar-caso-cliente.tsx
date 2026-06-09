@@ -18,6 +18,7 @@ import { SelectInput } from "@/components/ui/select-input";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Button } from "@/components/ui/button";
 import { AccordionSection } from "@/components/ui/accordion";
+import { LeyendaRequerido } from "@/components/ui/indicador-requerido";
 import { SelectPill } from "@/components/forms/select-pill";
 import { cn } from "@/lib/utils";
 import type {
@@ -115,6 +116,9 @@ export function EditarCasoCliente({
   });
 
   const tipoPersona = watch("tipo_persona");
+  const tipoSeguroId = watch("tipo_seguro_id");
+  // Contactos de atención: obligatorio solo en VIDA (tipo_seguro_id = 3).
+  const contactosObligatorio = Number(tipoSeguroId) === 3;
   const contactos = useFieldArray({ control, name: "contactos_atencion" });
   const beneficiarios = useFieldArray({ control, name: "beneficiarios" });
 
@@ -244,10 +248,13 @@ export function EditarCasoCliente({
         </h1>
       </div>
 
+      <LeyendaRequerido className="border-y border-neutral-100 py-2.5" />
+
       {/* ── 1. Datos del seguro ── */}
       <AccordionSection
         titulo="Datos del seguro"
         descripcion="Tipo de seguro, aseguradora y póliza"
+        obligatorio
         abiertoInicial
         forzarAbierto={intentoEnviar && errorSeguro}
         conError={errorSeguro}
@@ -329,6 +336,7 @@ export function EditarCasoCliente({
       <AccordionSection
         titulo="Cuestionario del siniestro"
         descripcion="Los detalles del siniestro que ayudan a procesar la reclamación"
+        obligatorio
         abiertoInicial
         forzarAbierto={intentoEnviar && errorCuestionario}
         conError={intentoEnviar && errorCuestionario}
@@ -375,6 +383,7 @@ export function EditarCasoCliente({
       <AccordionSection
         titulo="Datos del asegurado"
         descripcion="A nombre de quién es la póliza"
+        obligatorio
         abiertoInicial
         forzarAbierto={intentoEnviar && errorAsegurado}
         conError={errorAsegurado}
@@ -453,7 +462,8 @@ export function EditarCasoCliente({
       {/* ── 4. Dirección ── */}
       <AccordionSection
         titulo="Dirección"
-        descripcion="Domicilio del asegurado (opcional)"
+        descripcion="Domicilio del asegurado"
+        obligatorio={false}
       >
         <Field label="Domicilio">
           <Input {...register("domicilio")} />
@@ -490,7 +500,9 @@ export function EditarCasoCliente({
       {/* ── 5. Contactos de atención ── */}
       <AccordionSection
         titulo="Contactos de atención"
-        descripcion="Personas con quienes coordinar el caso (opcional)"
+        descripcion="Personas con quienes coordinar el caso"
+        obligatorio={contactosObligatorio}
+        nota="NOTA: obligatorio en VIDA, opcional en GMM y AUTO"
         abiertoInicial={caso.contactos_atencion.length > 0}
       >
         <div className="flex flex-col gap-3">
@@ -538,7 +550,8 @@ export function EditarCasoCliente({
       {/* ── 6. Beneficiarios ── */}
       <AccordionSection
         titulo="Beneficiarios"
-        descripcion="Beneficiarios de la póliza (opcional)"
+        descripcion="Beneficiarios de la póliza"
+        obligatorio={false}
         abiertoInicial={caso.beneficiarios.length > 0}
       >
         <div className="flex flex-col gap-3">

@@ -18,6 +18,7 @@ import { SelectInput } from "@/components/ui/select-input";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Button } from "@/components/ui/button";
 import { AccordionSection } from "@/components/ui/accordion";
+import { LeyendaRequerido } from "@/components/ui/indicador-requerido";
 import { SelectPill } from "@/components/forms/select-pill";
 import { cn } from "@/lib/utils";
 import type {
@@ -93,6 +94,8 @@ export function NuevoCasoCliente({
   );
   const tipoSeguroNombre =
     tiposSeguro.find((t) => t.id === Number(tipoSeguroId))?.nombre ?? null;
+  // Contactos de atención: obligatorio solo en VIDA (tipo_seguro_id = 3).
+  const contactosObligatorio = Number(tipoSeguroId) === 3;
   const yaSeReporto = respuestaYaSeReporto(preguntas, respuestas);
 
   const onRespuesta = (preguntaId: number, valor: string) => {
@@ -266,6 +269,8 @@ export function NuevoCasoCliente({
         )}
       </div>
 
+      <LeyendaRequerido className="border-y border-neutral-100 py-2.5" />
+
       {!paqueteActivo && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           No tienes paquetes con cupo. Contrata uno en{" "}
@@ -280,6 +285,7 @@ export function NuevoCasoCliente({
       <AccordionSection
         titulo="Datos del seguro"
         descripcion="Tipo de seguro, aseguradora y póliza"
+        obligatorio
         abiertoInicial
         forzarAbierto={intentoEnviar && errorSeguro}
         conError={errorSeguro}
@@ -359,8 +365,9 @@ export function NuevoCasoCliente({
 
       {/* ── 2. Cuestionario del siniestro ── */}
       <AccordionSection
-        titulo="Cuestionario del siniestro *"
-        descripcion="Cuéntanos qué pasó: esta información es obligatoria para registrar el caso"
+        titulo="Cuestionario del siniestro"
+        descripcion="Cuéntanos qué pasó"
+        obligatorio
         abiertoInicial
         forzarAbierto={intentoEnviar && errorCuestionario}
         conError={intentoEnviar && errorCuestionario}
@@ -414,6 +421,7 @@ export function NuevoCasoCliente({
       <AccordionSection
         titulo="Datos del asegurado"
         descripcion="A nombre de quién es la póliza"
+        obligatorio
         abiertoInicial
         forzarAbierto={intentoEnviar && errorAsegurado}
         conError={errorAsegurado}
@@ -493,7 +501,8 @@ export function NuevoCasoCliente({
       {/* ── 4. Dirección ── */}
       <AccordionSection
         titulo="Dirección"
-        descripcion="Domicilio del asegurado (opcional)"
+        descripcion="Domicilio del asegurado"
+        obligatorio={false}
       >
         <Field label="Domicilio">
           <Input {...register("domicilio")} />
@@ -530,7 +539,9 @@ export function NuevoCasoCliente({
       {/* ── 5. Contactos de atención ── */}
       <AccordionSection
         titulo="Contactos de atención"
-        descripcion="Personas con quienes coordinar el caso (opcional)"
+        descripcion="Personas con quienes coordinar el caso"
+        obligatorio={contactosObligatorio}
+        nota="NOTA: obligatorio en VIDA, opcional en GMM y AUTO"
       >
         <div className="flex flex-col gap-3">
           {contactos.fields.map((f, i) => (
@@ -577,7 +588,8 @@ export function NuevoCasoCliente({
       {/* ── 6. Beneficiarios ── */}
       <AccordionSection
         titulo="Beneficiarios"
-        descripcion="Beneficiarios de la póliza (opcional)"
+        descripcion="Beneficiarios de la póliza"
+        obligatorio={false}
       >
         <div className="flex flex-col gap-3">
           {beneficiarios.fields.map((f, i) => (
@@ -632,7 +644,8 @@ export function NuevoCasoCliente({
       {/* ── 7. Documentos ── */}
       <AccordionSection
         titulo="Documentos"
-        descripcion="Archivos del caso (opcional)"
+        descripcion="Archivos del caso"
+        obligatorio={false}
       >
         <label className="flex h-32 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 text-sm text-neutral-600 hover:bg-neutral-50">
           <Upload className="mr-2 h-5 w-5" />

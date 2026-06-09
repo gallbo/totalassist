@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 
 type FieldProps = {
-  label: string;
+  label: React.ReactNode;
   htmlFor: string;
   error?: string;
   className?: string;

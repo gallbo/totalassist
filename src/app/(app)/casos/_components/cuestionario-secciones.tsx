@@ -3,6 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { SelectInput } from "@/components/ui/select-input";
 import { Field } from "@/components/forms/field";
+import { IndicadorRequerido } from "@/components/ui/indicador-requerido";
 import type { CuestionarioPregunta } from "@/lib/api/brokers";
 import { cn } from "@/lib/utils";
 
@@ -64,9 +65,12 @@ export function PreguntaControl({
   disabled?: boolean;
   error?: string;
 }) {
-  const etiqueta = pregunta.obligatoria
-    ? `${pregunta.texto} *`
-    : pregunta.texto;
+  const etiqueta = (
+    <span className="flex items-center gap-1.5">
+      {pregunta.texto}
+      <IndicadorRequerido obligatorio={pregunta.obligatoria} size="sm" />
+    </span>
+  );
   const inputId = `pregunta-${pregunta.pregunta_id}`;
 
   let control: React.ReactNode;
