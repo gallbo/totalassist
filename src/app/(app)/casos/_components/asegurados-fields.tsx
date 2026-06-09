@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import {
   useFieldArray,
+  useWatch,
   Controller,
   type Control,
   type UseFormRegister,
@@ -435,17 +437,29 @@ export function AseguradosFields({
   register,
   estados,
   esAuto,
-  modo,
-  onCambioModo,
 }: {
   control: Ctl;
   register: Reg;
   estados: Estado[];
   esAuto: boolean;
-  modo: "fisica" | "moral";
-  onCambioModo: (m: "fisica" | "moral") => void;
 }) {
   const fa = useFieldArray({ control, name: "asegurados" });
+  const { replace } = fa;
+  // El modo se deriva del primer asegurado. El toggle usa replace() del propio
+  // field array (setValue desde el padre no sincroniza useFieldArray del hijo).
+  const tipo = useWatch({ control, name: "asegurados.0.tipo_persona" });
+  const modo: "fisica" | "moral" = tipo === "moral" ? "moral" : "fisica";
+
+  const cambiarModo = (m: "fisica" | "moral") => {
+    replace([m === "moral" ? aseguradoMoralVacio() : aseguradoFisicaVacio()]);
+  };
+
+  // Persona moral solo aplica en AUTO: al salir de AUTO se vuelve a física.
+  useEffect(() => {
+    if (!esAuto && modo === "moral") {
+      replace([aseguradoFisicaVacio()]);
+    }
+  }, [esAuto, modo, replace]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -458,7 +472,7 @@ export function AseguradosFields({
             <button
               key={m}
               type="button"
-              onClick={() => onCambioModo(m)}
+              onClick={() => cambiarModo(m)}
               className={
                 "rounded-full px-4 py-1.5 text-sm font-semibold " +
                 (modo === m

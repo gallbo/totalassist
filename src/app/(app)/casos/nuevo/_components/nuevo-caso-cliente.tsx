@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -36,7 +36,6 @@ import { nuevoCasoSchema, type NuevoCasoSchema } from "../_schema";
 import {
   AseguradosFields,
   aseguradoFisicaVacio,
-  aseguradoMoralVacio,
   normalizarAsegurados,
 } from "../../_components/asegurados-fields";
 import {
@@ -92,19 +91,8 @@ export function NuevoCasoCliente({
 
   const tipoSeguroId = watch("tipo_seguro_id");
   const esAuto = Number(tipoSeguroId) === 1;
-  const modoAsegurado =
-    watch("asegurados.0.tipo_persona") === "moral" ? "moral" : "fisica";
 
   const beneficiarios = useFieldArray({ control, name: "beneficiarios" });
-
-  // El toggle física/moral reinicia la lista de asegurados (cambia su forma).
-  const onCambioModoAsegurado = (m: "fisica" | "moral") => {
-    setValue(
-      "asegurados",
-      m === "moral" ? [aseguradoMoralVacio()] : [aseguradoFisicaVacio()],
-      { shouldValidate: false },
-    );
-  };
 
   const preguntas = useMemo(
     () => (tipoSeguroId ? (cuestionarios[String(tipoSeguroId)] ?? []) : []),
@@ -113,15 +101,6 @@ export function NuevoCasoCliente({
   const tipoSeguroNombre =
     tiposSeguro.find((t) => t.id === Number(tipoSeguroId))?.nombre ?? null;
   const yaSeReporto = respuestaYaSeReporto(preguntas, respuestas);
-
-  // Persona moral solo aplica en AUTO: si se cambia a otro ramo, vuelve a física.
-  useEffect(() => {
-    if (!esAuto && modoAsegurado === "moral") {
-      setValue("asegurados", [aseguradoFisicaVacio()], {
-        shouldValidate: false,
-      });
-    }
-  }, [esAuto, modoAsegurado, setValue]);
 
   const onRespuesta = (preguntaId: number, valor: string) => {
     setRespuestas((prev) => ({ ...prev, [preguntaId]: valor }));
@@ -486,8 +465,6 @@ export function NuevoCasoCliente({
           register={register}
           estados={estados}
           esAuto={esAuto}
-          modo={modoAsegurado}
-          onCambioModo={onCambioModoAsegurado}
         />
       </AccordionSection>
 

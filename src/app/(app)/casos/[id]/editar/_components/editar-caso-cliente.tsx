@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -35,8 +35,6 @@ import {
 import { nuevoCasoSchema, type NuevoCasoSchema } from "../../../nuevo/_schema";
 import {
   AseguradosFields,
-  aseguradoFisicaVacio,
-  aseguradoMoralVacio,
   aseguradosAForm,
   normalizarAsegurados,
 } from "../../../_components/asegurados-fields";
@@ -78,7 +76,6 @@ export function EditarCasoCliente({
     handleSubmit,
     control,
     watch,
-    setValue,
     setError,
     formState: { errors },
   } = useForm<NuevoCasoSchema>({
@@ -107,25 +104,7 @@ export function EditarCasoCliente({
 
   const tipoSeguroId = watch("tipo_seguro_id");
   const esAuto = Number(tipoSeguroId) === 1;
-  const modoAsegurado =
-    watch("asegurados.0.tipo_persona") === "moral" ? "moral" : "fisica";
   const beneficiarios = useFieldArray({ control, name: "beneficiarios" });
-
-  const onCambioModoAsegurado = (m: "fisica" | "moral") => {
-    setValue(
-      "asegurados",
-      m === "moral" ? [aseguradoMoralVacio()] : [aseguradoFisicaVacio()],
-      { shouldValidate: false },
-    );
-  };
-
-  useEffect(() => {
-    if (!esAuto && modoAsegurado === "moral") {
-      setValue("asegurados", [aseguradoFisicaVacio()], {
-        shouldValidate: false,
-      });
-    }
-  }, [esAuto, modoAsegurado, setValue]);
 
   const tipoSeguroNombre = useMemo(
     () =>
@@ -380,8 +359,6 @@ export function EditarCasoCliente({
           register={register}
           estados={estados}
           esAuto={esAuto}
-          modo={modoAsegurado}
-          onCambioModo={onCambioModoAsegurado}
         />
       </AccordionSection>
 
