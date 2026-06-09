@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export type SelectPillOption = { value: string; label: string };
@@ -24,7 +24,35 @@ export function SelectPill({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [filtro, setFiltro] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+  const botonRef = useRef<HTMLButtonElement>(null);
   const seleccionada = options.find((o) => o.value === value);
+
+  // Cierra el panel con Escape (devolviendo el foco al botón) o al hacer clic
+  // fuera. El botón y las opciones viven dentro de rootRef, así que sus clics
+  // no disparan el cierre por click-outside.
+  useEffect(() => {
+    if (!open) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setOpen(false);
+        setFiltro("");
+        botonRef.current?.focus();
+      }
+    }
+    function onPointerDown(e: PointerEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setFiltro("");
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [open]);
 
   const filtradas = filtro
     ? options.filter((o) =>
@@ -35,9 +63,10 @@ export function SelectPill({
   const mostrarBusqueda = buscable && options.length > 6;
 
   return (
-    <div className="relative">
+    <div className="relative" ref={rootRef}>
       <button
         type="button"
+        ref={botonRef}
         onClick={() => {
           setOpen((o) => !o);
           if (open) setFiltro("");
