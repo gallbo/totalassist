@@ -12,6 +12,8 @@ const sharedRoutes = ["/ayuda", "/condiciones", "/privacidad", "/seguimiento"];
 export default auth((req) => {
   const { pathname } = req.nextUrl;
   const isAuthenticated = !!req.auth;
+  // El refresh del token falló: la sesión está muerta aunque la cookie exista.
+  const sesionExpirada = req.auth?.error === "RefreshAccessTokenError";
   const isPublicRoute = publicRoutes.some((route) =>
     pathname.startsWith(route),
   );
@@ -21,6 +23,14 @@ export default auth((req) => {
 
   if (isSharedRoute) {
     return NextResponse.next();
+  }
+
+  // Sesión expirada en ruta protegida: mandar a login con aviso, en vez de
+  // dejar al usuario navegando con páginas en blanco o trabadas.
+  if (sesionExpirada && !isPublicRoute) {
+    const url = new URL("/login", req.url);
+    url.searchParams.set("expirada", "1");
+    return NextResponse.redirect(url);
   }
 
   if (!isAuthenticated && !isPublicRoute) {
