@@ -156,6 +156,50 @@ export type CasoPoliza = {
   tiene_archivo: boolean;
 };
 
+// Estructura de asegurados del caso. No-AUTO / AUTO física: N asegurados física,
+// cada uno con direcciones y contactos. AUTO moral: un asegurado moral con N
+// representantes, cada representante con sus direcciones y contactos.
+export type CasoDireccion = {
+  id?: number;
+  domicilio?: string | null;
+  estado_id?: number | null;
+  ciudad?: string | null;
+  codigo_postal?: string | null;
+};
+
+export type CasoContactoAsegurado = {
+  id?: number;
+  nombre?: string | null;
+  telefono?: string | null;
+  email?: string | null;
+  relacion_asegurado?: string | null;
+};
+
+export type CasoRepresentante = {
+  id?: number;
+  nombre?: string | null;
+  cargo?: string | null;
+  rfc?: string | null;
+  correo?: string | null;
+  telefono?: string | null;
+  direcciones?: CasoDireccion[];
+  contactos_atencion?: CasoContactoAsegurado[];
+};
+
+export type CasoAsegurado = {
+  id?: number;
+  tipo_persona: "fisica" | "moral";
+  nombre?: string | null;
+  razon_social?: string | null;
+  nombre_comercial?: string | null;
+  rfc?: string | null;
+  correo?: string | null;
+  telefono?: string | null;
+  direcciones?: CasoDireccion[];
+  contactos_atencion?: CasoContactoAsegurado[];
+  representantes?: CasoRepresentante[];
+};
+
 export type CasoBeneficiario = {
   id?: number;
   nombre: string;
@@ -223,6 +267,7 @@ export type CasoDetalle = CasoResumen & {
   ciudad: string | null;
   domicilio: string | null;
   poliza: CasoPoliza | null;
+  asegurados: CasoAsegurado[];
   contactos_atencion: CasoContactoAtencion[];
   beneficiarios: CasoBeneficiario[];
   archivos: CasoArchivo[];
@@ -239,7 +284,9 @@ export type ListaCasos = {
 };
 
 export type RegistrarCasoInput = {
-  tipo_persona: "fisica" | "moral";
+  // Campos planos legacy: el portal ahora manda `asegurados`; se conservan
+  // opcionales por compatibilidad de tipos.
+  tipo_persona?: "fisica" | "moral";
   nombre_asegurado?: string | null;
   nombre_empresa?: string | null;
   nombre_comercial?: string | null;
@@ -264,6 +311,7 @@ export type RegistrarCasoInput = {
   ciudad?: string | null;
   domicilio?: string | null;
   codigo_postal?: string | null;
+  asegurados?: CasoAsegurado[];
   contactos_atencion?: CasoContactoAtencion[];
   beneficiarios?: CasoBeneficiario[];
   // Respuestas del cuestionario del siniestro { pregunta_id: respuesta }.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -13,13 +13,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { SelectInput } from "@/components/ui/select-input";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Button } from "@/components/ui/button";
 import { AccordionSection } from "@/components/ui/accordion";
 import { LeyendaRequerido } from "@/components/ui/indicador-requerido";
 import { SelectPill } from "@/components/forms/select-pill";
-import { cn } from "@/lib/utils";
 import type {
   Aseguradora,
   CuestionarioPregunta,
@@ -35,6 +33,12 @@ import {
   type RespuestasCuestionario,
 } from "../../_components/cuestionario-secciones";
 import { nuevoCasoSchema, type NuevoCasoSchema } from "../_schema";
+import {
+  AseguradosFields,
+  aseguradoFisicaVacio,
+  aseguradoMoralVacio,
+  normalizarAsegurados,
+} from "../../_components/asegurados-fields";
 import {
   registrarCasoAction,
   subirArchivoCasoAction,
@@ -80,18 +84,27 @@ export function NuevoCasoCliente({
       nuevoCasoSchema,
     ) as unknown as Resolver<NuevoCasoSchema>,
     defaultValues: {
-      tipo_persona: "fisica",
       moneda: "Moneda Nacional",
-      contactos_atencion: [],
+      asegurados: [aseguradoFisicaVacio()],
       beneficiarios: [],
     },
   });
 
-  const tipoPersona = watch("tipo_persona");
   const tipoSeguroId = watch("tipo_seguro_id");
+  const esAuto = Number(tipoSeguroId) === 1;
+  const modoAsegurado =
+    watch("asegurados.0.tipo_persona") === "moral" ? "moral" : "fisica";
 
-  const contactos = useFieldArray({ control, name: "contactos_atencion" });
   const beneficiarios = useFieldArray({ control, name: "beneficiarios" });
+
+  // El toggle física/moral reinicia la lista de asegurados (cambia su forma).
+  const onCambioModoAsegurado = (m: "fisica" | "moral") => {
+    setValue(
+      "asegurados",
+      m === "moral" ? [aseguradoMoralVacio()] : [aseguradoFisicaVacio()],
+      { shouldValidate: false },
+    );
+  };
 
   const preguntas = useMemo(
     () => (tipoSeguroId ? (cuestionarios[String(tipoSeguroId)] ?? []) : []),
@@ -99,9 +112,16 @@ export function NuevoCasoCliente({
   );
   const tipoSeguroNombre =
     tiposSeguro.find((t) => t.id === Number(tipoSeguroId))?.nombre ?? null;
-  // Contactos de atención: obligatorio solo en VIDA (tipo_seguro_id = 3).
-  const contactosObligatorio = Number(tipoSeguroId) === 3;
   const yaSeReporto = respuestaYaSeReporto(preguntas, respuestas);
+
+  // Persona moral solo aplica en AUTO: si se cambia a otro ramo, vuelve a física.
+  useEffect(() => {
+    if (!esAuto && modoAsegurado === "moral") {
+      setValue("asegurados", [aseguradoFisicaVacio()], {
+        shouldValidate: false,
+      });
+    }
+  }, [esAuto, modoAsegurado, setValue]);
 
   const onRespuesta = (preguntaId: number, valor: string) => {
     setRespuestas((prev) => ({ ...prev, [preguntaId]: valor }));
@@ -172,18 +192,12 @@ export function NuevoCasoCliente({
     startTransition(async () => {
       const result = await registrarCasoAction({
         ...data,
-        correo: data.correo || null,
         num_siniestro_poliza: data.num_siniestro_poliza || null,
         moneda: data.moneda || null,
         fecha_expedicion: data.fecha_expedicion || null,
         vigencia_inicio: data.vigencia_inicio || null,
         vigencia_fin: data.vigencia_fin || null,
-        contactos_atencion: data.contactos_atencion?.map((c) => ({
-          nombre: c.nombre,
-          telefono: c.telefono || null,
-          email: c.email || null,
-          relacion_asegurado: c.relacion_asegurado || null,
-        })),
+        asegurados: normalizarAsegurados(data.asegurados),
         cuestionario: cuestionarioPayload,
       });
 
@@ -272,11 +286,7 @@ export function NuevoCasoCliente({
     !!errors.fecha_siniestro ||
     !!errors.num_siniestro_poliza ||
     Object.keys(erroresCuestionario).length > 0;
-  const errorAsegurado = !!(
-    errors.nombre_asegurado ||
-    errors.nombre_empresa ||
-    errors.correo
-  );
+  const errorAsegurado = !!errors.asegurados;
 
   return (
     <form
@@ -462,181 +472,23 @@ export function NuevoCasoCliente({
         )}
       </AccordionSection>
 
-      {/* ── 3. Datos del asegurado ── */}
+      {/* ── 3. Asegurados ── */}
       <AccordionSection
-        titulo="Datos del asegurado"
-        descripcion="A nombre de quién es la póliza"
+        titulo="Asegurados"
+        descripcion="A nombre de quién está la póliza, con sus direcciones y contactos"
         obligatorio
         abiertoInicial
         forzarAbierto={intentoEnviar && errorAsegurado}
         conError={errorAsegurado}
       >
-        <div className="grid grid-cols-2 gap-3">
-          {(["fisica", "moral"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() =>
-                setValue("tipo_persona", t, { shouldValidate: true })
-              }
-              className={cn(
-                "h-12 rounded-full text-sm font-semibold transition-colors",
-                tipoPersona === t
-                  ? "bg-brand-navy text-white"
-                  : "text-brand-navy/80 bg-blue-50 hover:bg-blue-100",
-              )}
-            >
-              {t === "fisica" ? "Persona física" : "Persona moral"}
-            </button>
-          ))}
-        </div>
-
-        {tipoPersona === "fisica" ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Field
-              label="Nombre completo del asegurado"
-              error={errors.nombre_asegurado?.message}
-            >
-              <Input {...register("nombre_asegurado")} />
-            </Field>
-            <Field label="RFC">
-              <Input {...register("rfc")} />
-            </Field>
-            <Field label="Correo" error={errors.correo?.message}>
-              <Input type="email" {...register("correo")} />
-            </Field>
-            <Field label="Teléfono">
-              <Input type="tel" {...register("telefono")} />
-            </Field>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <Field
-                label="Razón social"
-                error={errors.nombre_empresa?.message}
-              >
-                <Input {...register("nombre_empresa")} />
-              </Field>
-              <Field label="Nombre comercial">
-                <Input {...register("nombre_comercial")} />
-              </Field>
-              <Field label="RFC">
-                <Input {...register("rfc")} />
-              </Field>
-            </div>
-            <h3 className="text-brand-navy pt-2 text-sm font-semibold">
-              Representante legal
-            </h3>
-            <Field label="Nombre">
-              <Input {...register("nombre_representante")} />
-            </Field>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <Field label="Correo" error={errors.correo?.message}>
-                <Input type="email" {...register("correo")} />
-              </Field>
-              <Field label="Teléfono">
-                <Input type="tel" {...register("telefono")} />
-              </Field>
-            </div>
-          </>
-        )}
-      </AccordionSection>
-
-      {/* ── 4. Dirección ── */}
-      <AccordionSection
-        titulo="Dirección"
-        descripcion="Domicilio del asegurado"
-        obligatorio={false}
-      >
-        <Field label="Domicilio">
-          <Input {...register("domicilio")} />
-        </Field>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Field label="Estado">
-            <Controller
-              control={control}
-              name="estado_id"
-              render={({ field, fieldState }) => (
-                <SelectInput
-                  name={field.name}
-                  value={field.value ?? ""}
-                  onValueChange={(v) => field.onChange(v ? Number(v) : null)}
-                  onBlur={field.onBlur}
-                  invalid={!!fieldState.error}
-                  options={estados.map((e) => ({
-                    value: e.id,
-                    label: e.nombre,
-                  }))}
-                />
-              )}
-            />
-          </Field>
-          <Field label="Ciudad">
-            <Input {...register("ciudad")} />
-          </Field>
-          <Field label="Código postal">
-            <Input {...register("codigo_postal")} />
-          </Field>
-        </div>
-      </AccordionSection>
-
-      {/* ── 5. Contactos de atención ── */}
-      <AccordionSection
-        titulo="Contactos de atención"
-        descripcion="Personas con quienes coordinar el caso"
-        obligatorio={contactosObligatorio}
-        nota="NOTA: obligatorio en VIDA, opcional en GMM y AUTO"
-      >
-        <div className="flex flex-col gap-3">
-          {contactos.fields.map((f, i) => (
-            <div
-              key={f.id}
-              className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_1fr_1fr_auto]"
-            >
-              <Input
-                placeholder="Nombre"
-                {...register(`contactos_atencion.${i}.nombre`)}
-              />
-              <Input
-                placeholder="Teléfono"
-                {...register(`contactos_atencion.${i}.telefono`)}
-              />
-              <Input
-                placeholder="Correo"
-                {...register(`contactos_atencion.${i}.email`)}
-              />
-              <Input
-                placeholder="Relación con el asegurado"
-                {...register(`contactos_atencion.${i}.relacion_asegurado`)}
-              />
-              <button
-                type="button"
-                onClick={() => contactos.remove(i)}
-                className="bg-brand-navy hover:bg-brand-navy-hover flex h-10 w-10 items-center justify-center self-end rounded-full text-white"
-                aria-label="Eliminar contacto"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
-          <BrandButton
-            type="button"
-            onClick={() =>
-              contactos.append({
-                nombre: "",
-                telefono: "",
-                email: "",
-                relacion_asegurado: "",
-              })
-            }
-            tone="secondary"
-            className="self-start"
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            Agregar contacto
-          </BrandButton>
-        </div>
+        <AseguradosFields
+          control={control}
+          register={register}
+          estados={estados}
+          esAuto={esAuto}
+          modo={modoAsegurado}
+          onCambioModo={onCambioModoAsegurado}
+        />
       </AccordionSection>
 
       {/* ── 6. Beneficiarios ── */}
