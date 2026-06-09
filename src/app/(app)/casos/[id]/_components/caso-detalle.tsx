@@ -117,17 +117,23 @@ export function CasoDetalleVista({
         </Dato>
         <Dato label="Aseguradora">{caso.aseguradora ?? "—"}</Dato>
         <Dato label="Tipo de seguro">{caso.tipo_seguro ?? "—"}</Dato>
-        <Dato label="Folio de la póliza">{caso.folio_poliza ?? "—"}</Dato>
+        <Dato label="Número de póliza">
+          {caso.poliza?.numero_poliza ?? "—"}
+        </Dato>
         <Dato label="Fecha del siniestro">
           {formatearFechaLarga(caso.fecha_siniestro)}
         </Dato>
         <Dato label="Número de siniestro">
           {caso.num_siniestro_poliza ?? "Aún no se reporta"}
         </Dato>
-        <Dato label="Monto estimado">
-          {caso.monto_estimado != null
-            ? `$${Number(caso.monto_estimado).toLocaleString("es-MX")}`
+        <Dato label="Moneda">{caso.poliza?.moneda ?? "—"}</Dato>
+        <Dato label="Vigencia de la póliza">
+          {caso.poliza?.vigencia_inicio || caso.poliza?.vigencia_fin
+            ? `${formatearFechaLarga(caso.poliza?.vigencia_inicio)} – ${formatearFechaLarga(caso.poliza?.vigencia_fin)}`
             : "—"}
+        </Dato>
+        <Dato label="Archivo de la póliza">
+          {caso.poliza?.archivo_nombre ?? "—"}
         </Dato>
         <Dato label="Estado">{caso.estado ?? "—"}</Dato>
         <Dato label="Paquete">{caso.paquete?.descripcion ?? "—"}</Dato>
@@ -239,7 +245,14 @@ export function CasoDetalleVista({
                 key={c.id ?? c.nombre}
                 className="rounded-md border border-neutral-200 px-4 py-2 text-sm"
               >
-                <div className="text-brand-navy font-medium">{c.nombre}</div>
+                <div className="text-brand-navy font-medium">
+                  {c.nombre}
+                  {c.relacion_asegurado ? (
+                    <span className="ml-2 text-xs font-normal text-neutral-500">
+                      ({c.relacion_asegurado})
+                    </span>
+                  ) : null}
+                </div>
                 <div className="text-xs text-neutral-600">
                   {[c.telefono, c.email].filter(Boolean).join(" · ") ||
                     "Sin contacto"}

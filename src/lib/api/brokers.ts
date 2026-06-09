@@ -143,6 +143,17 @@ export type CasoContactoAtencion = {
   nombre: string;
   telefono?: string | null;
   email?: string | null;
+  relacion_asegurado?: string | null;
+};
+
+export type CasoPoliza = {
+  numero_poliza: string | null;
+  moneda: string | null;
+  fecha_expedicion: string | null;
+  vigencia_inicio: string | null;
+  vigencia_fin: string | null;
+  archivo_nombre: string | null;
+  tiene_archivo: boolean;
 };
 
 export type CasoBeneficiario = {
@@ -211,6 +222,7 @@ export type CasoDetalle = CasoResumen & {
   estado: string | null;
   ciudad: string | null;
   domicilio: string | null;
+  poliza: CasoPoliza | null;
   contactos_atencion: CasoContactoAtencion[];
   beneficiarios: CasoBeneficiario[];
   archivos: CasoArchivo[];
@@ -240,9 +252,14 @@ export type RegistrarCasoInput = {
   tipo_seguro_id?: number | null;
   tipo_siniestro_id?: number | null;
   num_siniestro_poliza?: string | null;
-  folio_poliza?: string | null;
   fecha_siniestro?: string | null;
-  monto_estimado?: number | null;
+  // Datos de la póliza (tabla CasoPoliza en Skipper). Reemplazan a folio_poliza
+  // y monto_estimado, que dejaron de capturarse en el portal.
+  numero_poliza?: string | null;
+  moneda?: string | null;
+  fecha_expedicion?: string | null;
+  vigencia_inicio?: string | null;
+  vigencia_fin?: string | null;
   estado_id?: number | null;
   ciudad?: string | null;
   domicilio?: string | null;
@@ -651,6 +668,49 @@ export const brokerApi = {
     }
 
     return (await res.json()) as CasoArchivo;
+  },
+
+  async subirArchivoPoliza(
+    token: string,
+    casoId: number,
+    archivo: File,
+  ): Promise<{ archivo_nombre: string | null; tiene_archivo: boolean }> {
+    // Mismo motivo que subirArchivoCaso: fetch nativo para el multipart.
+    const form = new FormData();
+    form.append("archivo", archivo);
+
+    const res = await fetch(
+      `${baseURL}/api/brokers/casos/${casoId}/poliza/archivo`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+        body: form,
+      },
+    );
+
+    if (!res.ok) {
+      let payload: ApiErrorPayload | undefined;
+      try {
+        payload = (await res.json()) as ApiErrorPayload;
+      } catch {
+        // Respuesta sin JSON; usamos el status para mapear el mensaje.
+      }
+      throw new ApiError(
+        payload?.mensaje ??
+          "No pudimos subir el archivo de la póliza. Intenta de nuevo.",
+        res.status,
+        payload?.error,
+        payload?.detalles ?? payload?.errors,
+      );
+    }
+
+    return (await res.json()) as {
+      archivo_nombre: string | null;
+      tiene_archivo: boolean;
+    };
   },
 
   getNuevoCasoBootstrap(token: string) {

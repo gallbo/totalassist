@@ -13,7 +13,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { MoneyInput } from "@/components/ui/money-input";
 import { SelectInput } from "@/components/ui/select-input";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Button } from "@/components/ui/button";
@@ -36,7 +35,11 @@ import {
   type RespuestasCuestionario,
 } from "../../_components/cuestionario-secciones";
 import { nuevoCasoSchema, type NuevoCasoSchema } from "../_schema";
-import { registrarCasoAction, subirArchivoCasoAction } from "../_actions";
+import {
+  registrarCasoAction,
+  subirArchivoCasoAction,
+  subirArchivoPolizaAction,
+} from "../_actions";
 
 const TAMANO_MAX = 10 * 1024 * 1024;
 
@@ -58,6 +61,7 @@ export function NuevoCasoCliente({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [archivos, setArchivos] = useState<File[]>([]);
+  const [polizaFile, setPolizaFile] = useState<File | null>(null);
   const [respuestas, setRespuestas] = useState<RespuestasCuestionario>({});
   const [erroresCuestionario, setErroresCuestionario] =
     useState<ErroresCuestionario>({});
@@ -77,6 +81,7 @@ export function NuevoCasoCliente({
     ) as unknown as Resolver<NuevoCasoSchema>,
     defaultValues: {
       tipo_persona: "fisica",
+      moneda: "Moneda Nacional",
       contactos_atencion: [],
       beneficiarios: [],
     },
@@ -169,10 +174,15 @@ export function NuevoCasoCliente({
         ...data,
         correo: data.correo || null,
         num_siniestro_poliza: data.num_siniestro_poliza || null,
+        moneda: data.moneda || null,
+        fecha_expedicion: data.fecha_expedicion || null,
+        vigencia_inicio: data.vigencia_inicio || null,
+        vigencia_fin: data.vigencia_fin || null,
         contactos_atencion: data.contactos_atencion?.map((c) => ({
           nombre: c.nombre,
           telefono: c.telefono || null,
           email: c.email || null,
+          relacion_asegurado: c.relacion_asegurado || null,
         })),
         cuestionario: cuestionarioPayload,
       });
@@ -193,6 +203,19 @@ export function NuevoCasoCliente({
 
       const casoId = result.data.id;
       const archivosACargar = archivos;
+
+      // Archivo de la póliza: se sube en segundo plano, igual que los demás.
+      if (polizaFile) {
+        const fd = new FormData();
+        fd.append("archivo", polizaFile);
+        void subirArchivoPolizaAction(casoId, fd).then((up) => {
+          if (!up.ok) {
+            toast.error(
+              `No se pudo subir el archivo de la póliza: ${up.message}`,
+            );
+          }
+        });
+      }
 
       // Disparamos uploads en paralelo y dejamos que terminen en segundo
       // plano. Cada uno revalida /casos/{id} al terminar (server action
@@ -242,7 +265,8 @@ export function NuevoCasoCliente({
   const errorSeguro = !!(
     errors.tipo_seguro_id ||
     errors.aseguradora_id ||
-    errors.folio_poliza
+    errors.numero_poliza ||
+    errors.vigencia_fin
   );
   const errorCuestionario =
     !!errors.fecha_siniestro ||
@@ -339,28 +363,49 @@ export function NuevoCasoCliente({
           />
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Field
-            label="Folio de la póliza"
-            error={errors.folio_poliza?.message}
-          >
-            <Input {...register("folio_poliza")} />
+          <Field label="Número de póliza" error={errors.numero_poliza?.message}>
+            <Input {...register("numero_poliza")} />
           </Field>
-          <Field label="Monto estimado (MXN)">
-            <Controller
-              control={control}
-              name="monto_estimado"
-              render={({ field, fieldState }) => (
-                <MoneyInput
-                  name={field.name}
-                  value={field.value ?? null}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  invalid={!!fieldState.error}
-                />
-              )}
-            />
+          <Field label="Moneda">
+            <Input {...register("moneda")} />
           </Field>
         </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <Field label="Fecha de expedición">
+            <Input type="date" {...register("fecha_expedicion")} />
+          </Field>
+          <Field label="Inicio de vigencia">
+            <Input type="date" {...register("vigencia_inicio")} />
+          </Field>
+          <Field label="Fin de vigencia" error={errors.vigencia_fin?.message}>
+            <Input type="date" {...register("vigencia_fin")} />
+          </Field>
+        </div>
+        <Field label="Archivo de la póliza">
+          {polizaFile ? (
+            <div className="flex items-center justify-between rounded-md bg-neutral-50 px-3 py-2 text-sm">
+              <span className="truncate">{polizaFile.name}</span>
+              <button
+                type="button"
+                onClick={() => setPolizaFile(null)}
+                className="text-neutral-500 hover:text-red-600"
+                aria-label="Quitar archivo de la póliza"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <label className="flex h-20 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 text-sm text-neutral-600 hover:bg-neutral-50">
+              <Upload className="mr-2 h-5 w-5" />
+              <span>Sube el archivo de la póliza (máx 10 MB)</span>
+              <input
+                type="file"
+                className="sr-only"
+                onChange={(e) => setPolizaFile(e.target.files?.[0] ?? null)}
+              />
+            </label>
+          )}
+        </Field>
       </AccordionSection>
 
       {/* ── 2. Cuestionario del siniestro ── */}
@@ -547,7 +592,7 @@ export function NuevoCasoCliente({
           {contactos.fields.map((f, i) => (
             <div
               key={f.id}
-              className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_1fr_auto]"
+              className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_1fr_1fr_auto]"
             >
               <Input
                 placeholder="Nombre"
@@ -560,6 +605,10 @@ export function NuevoCasoCliente({
               <Input
                 placeholder="Correo"
                 {...register(`contactos_atencion.${i}.email`)}
+              />
+              <Input
+                placeholder="Relación con el asegurado"
+                {...register(`contactos_atencion.${i}.relacion_asegurado`)}
               />
               <button
                 type="button"
@@ -574,7 +623,12 @@ export function NuevoCasoCliente({
           <BrandButton
             type="button"
             onClick={() =>
-              contactos.append({ nombre: "", telefono: "", email: "" })
+              contactos.append({
+                nombre: "",
+                telefono: "",
+                email: "",
+                relacion_asegurado: "",
+              })
             }
             tone="secondary"
             className="self-start"

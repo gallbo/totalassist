@@ -13,7 +13,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { MoneyInput } from "@/components/ui/money-input";
 import { SelectInput } from "@/components/ui/select-input";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Button } from "@/components/ui/button";
@@ -95,10 +94,12 @@ export function EditarCasoCliente({
       tipo_seguro_id: (caso.tipo_seguro_id ?? 0) as number,
       tipo_siniestro_id: caso.tipo_siniestro_id ?? null,
       num_siniestro_poliza: caso.num_siniestro_poliza ?? "",
-      folio_poliza: caso.folio_poliza ?? "",
       fecha_siniestro: caso.fecha_siniestro ?? "",
-      monto_estimado:
-        caso.monto_estimado != null ? Number(caso.monto_estimado) : undefined,
+      numero_poliza: caso.poliza?.numero_poliza ?? "",
+      moneda: caso.poliza?.moneda ?? "Moneda Nacional",
+      fecha_expedicion: caso.poliza?.fecha_expedicion ?? "",
+      vigencia_inicio: caso.poliza?.vigencia_inicio ?? "",
+      vigencia_fin: caso.poliza?.vigencia_fin ?? "",
       estado_id: caso.estado_id ?? undefined,
       ciudad: caso.ciudad ?? "",
       domicilio: caso.domicilio ?? "",
@@ -106,6 +107,7 @@ export function EditarCasoCliente({
         nombre: c.nombre,
         telefono: c.telefono ?? "",
         email: c.email ?? "",
+        relacion_asegurado: c.relacion_asegurado ?? "",
       })),
       beneficiarios: caso.beneficiarios.map((b) => ({
         nombre: b.nombre,
@@ -189,9 +191,12 @@ export function EditarCasoCliente({
         tipo_seguro_id: data.tipo_seguro_id,
         tipo_siniestro_id: data.tipo_siniestro_id ?? null,
         num_siniestro_poliza: data.num_siniestro_poliza || null,
-        folio_poliza: data.folio_poliza || null,
         fecha_siniestro: data.fecha_siniestro || null,
-        monto_estimado: data.monto_estimado ?? null,
+        numero_poliza: data.numero_poliza || null,
+        moneda: data.moneda || null,
+        fecha_expedicion: data.fecha_expedicion || null,
+        vigencia_inicio: data.vigencia_inicio || null,
+        vigencia_fin: data.vigencia_fin || null,
         estado_id: data.estado_id ?? null,
         ciudad: data.ciudad || null,
         domicilio: data.domicilio || null,
@@ -200,6 +205,7 @@ export function EditarCasoCliente({
           nombre: c.nombre,
           telefono: c.telefono || null,
           email: c.email || null,
+          relacion_asegurado: c.relacion_asegurado || null,
         })),
         beneficiarios: data.beneficiarios ?? [],
       });
@@ -226,7 +232,11 @@ export function EditarCasoCliente({
     });
   };
 
-  const errorSeguro = !!(errors.aseguradora_id || errors.folio_poliza);
+  const errorSeguro = !!(
+    errors.aseguradora_id ||
+    errors.numero_poliza ||
+    errors.vigencia_fin
+  );
   const errorCuestionario =
     !!errors.fecha_siniestro ||
     !!errors.num_siniestro_poliza ||
@@ -308,26 +318,22 @@ export function EditarCasoCliente({
           />
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Field
-            label="Folio de la póliza"
-            error={errors.folio_poliza?.message}
-          >
-            <Input {...register("folio_poliza")} />
+          <Field label="Número de póliza" error={errors.numero_poliza?.message}>
+            <Input {...register("numero_poliza")} />
           </Field>
-          <Field label="Monto estimado (MXN)">
-            <Controller
-              control={control}
-              name="monto_estimado"
-              render={({ field, fieldState }) => (
-                <MoneyInput
-                  name={field.name}
-                  value={field.value ?? null}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  invalid={!!fieldState.error}
-                />
-              )}
-            />
+          <Field label="Moneda">
+            <Input {...register("moneda")} />
+          </Field>
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <Field label="Fecha de expedición">
+            <Input type="date" {...register("fecha_expedicion")} />
+          </Field>
+          <Field label="Inicio de vigencia">
+            <Input type="date" {...register("vigencia_inicio")} />
+          </Field>
+          <Field label="Fin de vigencia" error={errors.vigencia_fin?.message}>
+            <Input type="date" {...register("vigencia_fin")} />
           </Field>
         </div>
       </AccordionSection>
@@ -509,7 +515,7 @@ export function EditarCasoCliente({
           {contactos.fields.map((f, i) => (
             <div
               key={f.id}
-              className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_1fr_auto]"
+              className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_1fr_1fr_auto]"
             >
               <Input
                 placeholder="Nombre"
@@ -522,6 +528,10 @@ export function EditarCasoCliente({
               <Input
                 placeholder="Correo"
                 {...register(`contactos_atencion.${i}.email`)}
+              />
+              <Input
+                placeholder="Relación con el asegurado"
+                {...register(`contactos_atencion.${i}.relacion_asegurado`)}
               />
               <button
                 type="button"
@@ -536,7 +546,12 @@ export function EditarCasoCliente({
           <BrandButton
             type="button"
             onClick={() =>
-              contactos.append({ nombre: "", telefono: "", email: "" })
+              contactos.append({
+                nombre: "",
+                telefono: "",
+                email: "",
+                relacion_asegurado: "",
+              })
             }
             tone="secondary"
             className="self-start"

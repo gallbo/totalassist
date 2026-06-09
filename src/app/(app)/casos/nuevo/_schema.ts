@@ -10,6 +10,7 @@ const contactoAtencionSchema = z.object({
   nombre: z.string().min(1, "Captura el nombre."),
   telefono: z.string().nullish(),
   email: z.string().email("Correo no válido.").nullish().or(z.literal("")),
+  relacion_asegurado: z.string().nullish(),
 });
 
 export const nuevoCasoSchema = z
@@ -40,12 +41,20 @@ export const nuevoCasoSchema = z
       .trim()
       .max(255, "Máximo 255 caracteres.")
       .nullish(),
-    folio_poliza: z.string().max(100, "Máximo 100 caracteres.").nullish(),
     fecha_siniestro: z
       .string()
       .trim()
       .min(1, "Captura la fecha del siniestro."),
-    monto_estimado: z.coerce.number().min(0).nullish(),
+    // Datos de la póliza (reemplazan folio y monto estimado).
+    numero_poliza: z
+      .string()
+      .trim()
+      .min(1, "Captura el número de póliza.")
+      .max(120, "Máximo 120 caracteres."),
+    moneda: z.string().nullish(),
+    fecha_expedicion: z.string().nullish(),
+    vigencia_inicio: z.string().nullish(),
+    vigencia_fin: z.string().nullish(),
     estado_id: z.coerce.number().int().positive().nullish(),
     ciudad: z.string().nullish(),
     domicilio: z.string().nullish(),
@@ -66,6 +75,17 @@ export const nuevoCasoSchema = z
         code: "custom",
         path: ["nombre_empresa"],
         message: "Captura la razón social.",
+      });
+    }
+    if (
+      data.vigencia_inicio &&
+      data.vigencia_fin &&
+      data.vigencia_fin < data.vigencia_inicio
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["vigencia_fin"],
+        message: "El fin de vigencia no puede ser anterior al inicio.",
       });
     }
   });
