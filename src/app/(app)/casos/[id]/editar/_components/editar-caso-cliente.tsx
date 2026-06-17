@@ -39,8 +39,13 @@ import {
   normalizarAsegurados,
 } from "../../../_components/asegurados-fields";
 import {
+  PolizasFields,
+  polizaVacia,
+} from "../../../_components/polizas-fields";
+import {
   actualizarCasoAction,
   guardarCuestionarioAction,
+  subirArchivoPolizaAction,
 } from "../../_actions";
 
 type Props = {
@@ -70,6 +75,10 @@ export function EditarCasoCliente({
   const [erroresCuestionario, setErroresCuestionario] =
     useState<ErroresCuestionario>({});
   const [intentoEnviar, setIntentoEnviar] = useState(false);
+  // Archivo nuevo por póliza, indexado por el id estable del field array.
+  const [polizaFiles, setPolizaFiles] = useState<Record<string, File | null>>(
+    {},
+  );
 
   const {
     register,
@@ -88,11 +97,17 @@ export function EditarCasoCliente({
       tipo_siniestro_id: caso.tipo_siniestro_id ?? null,
       num_siniestro_poliza: caso.num_siniestro_poliza ?? "",
       fecha_siniestro: caso.fecha_siniestro ?? "",
-      numero_poliza: caso.poliza?.numero_poliza ?? "",
-      moneda: caso.poliza?.moneda ?? "Moneda Nacional",
-      fecha_expedicion: caso.poliza?.fecha_expedicion ?? "",
-      vigencia_inicio: caso.poliza?.vigencia_inicio ?? "",
-      vigencia_fin: caso.poliza?.vigencia_fin ?? "",
+      polizas:
+        caso.polizas.length > 0
+          ? caso.polizas.map((p) => ({
+              id: p.id,
+              numero_poliza: p.numero_poliza ?? "",
+              moneda: p.moneda ?? "Moneda Nacional",
+              fecha_expedicion: p.fecha_expedicion ?? "",
+              vigencia_inicio: p.vigencia_inicio ?? "",
+              vigencia_fin: p.vigencia_fin ?? "",
+            }))
+          : [polizaVacia()],
       asegurados: aseguradosAForm(caso.asegurados),
       beneficiarios: caso.beneficiarios.map((b) => ({
         nombre: b.nombre,
@@ -105,6 +120,19 @@ export function EditarCasoCliente({
   const tipoSeguroId = watch("tipo_seguro_id");
   const esAuto = Number(tipoSeguroId) === 1;
   const beneficiarios = useFieldArray({ control, name: "beneficiarios" });
+  const polizas = useFieldArray({ control, name: "polizas", keyName: "_key" });
+
+  // Nombre del archivo ya cargado por póliza (para mostrarlo en el campo de subida).
+  const archivoActualPorId = useMemo(
+    () =>
+      Object.fromEntries(
+        caso.polizas.map((p) => [
+          p.id,
+          { archivo_nombre: p.archivo_nombre, tiene_archivo: p.tiene_archivo },
+        ]),
+      ),
+    [caso.polizas],
+  );
 
   const tipoSeguroNombre = useMemo(
     () =>
@@ -165,11 +193,14 @@ export function EditarCasoCliente({
         tipo_siniestro_id: data.tipo_siniestro_id ?? null,
         num_siniestro_poliza: data.num_siniestro_poliza || null,
         fecha_siniestro: data.fecha_siniestro || null,
-        numero_poliza: data.numero_poliza || null,
-        moneda: data.moneda || null,
-        fecha_expedicion: data.fecha_expedicion || null,
-        vigencia_inicio: data.vigencia_inicio || null,
-        vigencia_fin: data.vigencia_fin || null,
+        polizas: data.polizas.map((p) => ({
+          ...(p.id ? { id: p.id } : {}),
+          numero_poliza: p.numero_poliza,
+          moneda: p.moneda || null,
+          fecha_expedicion: p.fecha_expedicion || null,
+          vigencia_inicio: p.vigencia_inicio || null,
+          vigencia_fin: p.vigencia_fin || null,
+        })),
         asegurados: normalizarAsegurados(data.asegurados),
         beneficiarios: data.beneficiarios ?? [],
       });
@@ -178,6 +209,29 @@ export function EditarCasoCliente({
         toast.error(result.message);
         return;
       }
+
+      // Archivos nuevos por póliza. Las existentes se ubican por id; las nuevas,
+      // por número de póliza contra el detalle actualizado que devuelve el PUT.
+      const idPorNumero = new Map(
+        result.data.polizas.map((p) => [p.numero_poliza, p.id]),
+      );
+      polizas.fields.forEach((field, idx) => {
+        const file = polizaFiles[field._key];
+        if (!file) return;
+        const existenteId = (field as { id?: number }).id;
+        const polizaId =
+          existenteId ?? idPorNumero.get(data.polizas[idx].numero_poliza);
+        if (!polizaId) return;
+        const fd = new FormData();
+        fd.append("archivo", file);
+        void subirArchivoPolizaAction(caso.id, polizaId, fd).then((up) => {
+          if (!up.ok) {
+            toast.error(
+              `No se pudo subir el archivo de la póliza ${data.polizas[idx].numero_poliza}: ${up.message}`,
+            );
+          }
+        });
+      });
 
       // Las respuestas del cuestionario se guardan aparte (endpoint propio).
       const resultCuestionario = await guardarCuestionarioAction(
@@ -196,11 +250,7 @@ export function EditarCasoCliente({
     });
   };
 
-  const errorSeguro = !!(
-    errors.aseguradora_id ||
-    errors.numero_poliza ||
-    errors.vigencia_fin
-  );
+  const errorSeguro = !!(errors.aseguradora_id || errors.polizas);
   const errorCuestionario =
     !!errors.fecha_siniestro ||
     !!errors.num_siniestro_poliza ||
@@ -277,24 +327,23 @@ export function EditarCasoCliente({
             )}
           />
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Field label="Número de póliza" error={errors.numero_poliza?.message}>
-            <Input {...register("numero_poliza")} />
-          </Field>
-          <Field label="Moneda">
-            <Input {...register("moneda")} />
-          </Field>
-        </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Field label="Fecha de expedición">
-            <Input type="date" {...register("fecha_expedicion")} />
-          </Field>
-          <Field label="Inicio de vigencia">
-            <Input type="date" {...register("vigencia_inicio")} />
-          </Field>
-          <Field label="Fin de vigencia" error={errors.vigencia_fin?.message}>
-            <Input type="date" {...register("vigencia_fin")} />
-          </Field>
+        <div className="border-t border-neutral-100 pt-4">
+          <p className="mb-3 text-xs text-neutral-500">
+            Un caso es de un solo tipo de seguro, pero puede tener varias
+            pólizas del mismo siniestro. Agrega todas las que apliquen.
+          </p>
+          <PolizasFields
+            control={control}
+            register={register}
+            fields={polizas.fields}
+            onAppend={() => polizas.append(polizaVacia())}
+            onRemove={(i) => polizas.remove(i)}
+            files={polizaFiles}
+            onFileChange={(key, file) =>
+              setPolizaFiles((prev) => ({ ...prev, [key]: file }))
+            }
+            archivoActualPorId={archivoActualPorId}
+          />
         </div>
       </AccordionSection>
 

@@ -118,23 +118,11 @@ export function CasoDetalleVista({
         </Dato>
         <Dato label="Aseguradora">{caso.aseguradora ?? "—"}</Dato>
         <Dato label="Tipo de seguro">{caso.tipo_seguro ?? "—"}</Dato>
-        <Dato label="Número de póliza">
-          {caso.poliza?.numero_poliza ?? "—"}
-        </Dato>
         <Dato label="Fecha del siniestro">
           {formatearFechaLarga(caso.fecha_siniestro)}
         </Dato>
         <Dato label="Número de siniestro">
           {caso.num_siniestro_poliza ?? "Aún no se reporta"}
-        </Dato>
-        <Dato label="Moneda">{caso.poliza?.moneda ?? "—"}</Dato>
-        <Dato label="Vigencia de la póliza">
-          {caso.poliza?.vigencia_inicio || caso.poliza?.vigencia_fin
-            ? `${formatearFechaLarga(caso.poliza?.vigencia_inicio)} – ${formatearFechaLarga(caso.poliza?.vigencia_fin)}`
-            : "—"}
-        </Dato>
-        <Dato label="Archivo de la póliza">
-          {caso.poliza?.archivo_nombre ?? "—"}
         </Dato>
         <Dato label="Estado">{caso.estado ?? "—"}</Dato>
         <Dato label="Paquete">{caso.paquete?.descripcion ?? "—"}</Dato>
@@ -142,6 +130,35 @@ export function CasoDetalleVista({
           {formatearFechaLarga(caso.created_at)}
         </Dato>
       </dl>
+
+      {caso.polizas.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-brand-navy text-sm font-semibold">
+            {caso.polizas.length === 1
+              ? "Póliza"
+              : `Pólizas (${caso.polizas.length})`}
+          </h2>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {caso.polizas.map((p) => (
+              <div
+                key={p.id}
+                className="rounded-xl border border-neutral-200 p-4"
+              >
+                <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                  <Dato label="Número de póliza">{p.numero_poliza ?? "—"}</Dato>
+                  <Dato label="Moneda">{p.moneda ?? "—"}</Dato>
+                  <Dato label="Vigencia">
+                    {p.vigencia_inicio || p.vigencia_fin
+                      ? `${formatearFechaLarga(p.vigencia_inicio)} – ${formatearFechaLarga(p.vigencia_fin)}`
+                      : "—"}
+                  </Dato>
+                  <Dato label="Archivo">{p.archivo_nombre ?? "—"}</Dato>
+                </dl>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Etapas del proceso por cobertura (las planea el equipo de Total Claim Assist) */}
       <EtapasCobertura coberturas={caso.coberturas} />

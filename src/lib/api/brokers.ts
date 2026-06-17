@@ -147,6 +147,7 @@ export type CasoContactoAtencion = {
 };
 
 export type CasoPoliza = {
+  id: number;
   numero_poliza: string | null;
   moneda: string | null;
   fecha_expedicion: string | null;
@@ -154,6 +155,17 @@ export type CasoPoliza = {
   vigencia_fin: string | null;
   archivo_nombre: string | null;
   tiene_archivo: boolean;
+};
+
+// Póliza tal como viaja en el alta/edición del caso. `id` solo en edición:
+// identifica una póliza existente para conservarla (y su archivo).
+export type PolizaInput = {
+  id?: number;
+  numero_poliza: string;
+  moneda?: string | null;
+  fecha_expedicion?: string | null;
+  vigencia_inicio?: string | null;
+  vigencia_fin?: string | null;
 };
 
 // Estructura de asegurados del caso. No-AUTO / AUTO física: N asegurados física,
@@ -266,6 +278,8 @@ export type CasoDetalle = CasoResumen & {
   estado: string | null;
   ciudad: string | null;
   domicilio: string | null;
+  polizas: CasoPoliza[];
+  // Legacy: la primera póliza del caso. Usar `polizas`.
   poliza: CasoPoliza | null;
   asegurados: CasoAsegurado[];
   contactos_atencion: CasoContactoAtencion[];
@@ -300,8 +314,10 @@ export type RegistrarCasoInput = {
   tipo_siniestro_id?: number | null;
   num_siniestro_poliza?: string | null;
   fecha_siniestro?: string | null;
-  // Datos de la póliza (tabla CasoPoliza en Skipper). Reemplazan a folio_poliza
-  // y monto_estimado, que dejaron de capturarse en el portal.
+  // Pólizas del caso (tabla CasoPoliza en Skipper, 1:N). Un caso es de un solo
+  // tipo de seguro pero puede tener varias pólizas del mismo siniestro. Los
+  // campos planos de abajo quedan como legacy de una sola póliza.
+  polizas?: PolizaInput[];
   numero_poliza?: string | null;
   moneda?: string | null;
   fecha_expedicion?: string | null;
@@ -353,6 +369,8 @@ export type RegistrarCasoResponse = {
   broker_paquete_id: number;
   estatus: number;
   created_at: string | null;
+  // Pólizas creadas (id + número) para subir el archivo de cada una.
+  polizas: { id: number; numero_poliza: string | null }[];
   paquete: { id: number; casos_restantes: number };
 };
 
@@ -721,6 +739,7 @@ export const brokerApi = {
   async subirArchivoPoliza(
     token: string,
     casoId: number,
+    polizaId: number,
     archivo: File,
   ): Promise<{ archivo_nombre: string | null; tiene_archivo: boolean }> {
     // Mismo motivo que subirArchivoCaso: fetch nativo para el multipart.
@@ -728,7 +747,7 @@ export const brokerApi = {
     form.append("archivo", archivo);
 
     const res = await fetch(
-      `${baseURL}/api/brokers/casos/${casoId}/poliza/archivo`,
+      `${baseURL}/api/brokers/casos/${casoId}/polizas/${polizaId}/archivo`,
       {
         method: "POST",
         headers: {

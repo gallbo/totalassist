@@ -14,6 +14,20 @@ const direccionSchema = z.object({
   codigo_postal: z.string().nullish(),
 });
 
+const polizaSchema = z.object({
+  // Solo en edición: identifica una póliza existente para conservarla.
+  id: z.number().optional(),
+  numero_poliza: z
+    .string()
+    .trim()
+    .min(1, "Captura el número de póliza.")
+    .max(120, "Máximo 120 caracteres."),
+  moneda: z.string().nullish(),
+  fecha_expedicion: z.string().nullish(),
+  vigencia_inicio: z.string().nullish(),
+  vigencia_fin: z.string().nullish(),
+});
+
 const contactoAseguradoSchema = z.object({
   nombre: z.string().nullish(),
   telefono: z.string().nullish(),
@@ -67,16 +81,9 @@ export const nuevoCasoSchema = z
       .string()
       .trim()
       .min(1, "Captura la fecha del siniestro."),
-    // Datos de la póliza (reemplazan folio y monto estimado).
-    numero_poliza: z
-      .string()
-      .trim()
-      .min(1, "Captura el número de póliza.")
-      .max(120, "Máximo 120 caracteres."),
-    moneda: z.string().nullish(),
-    fecha_expedicion: z.string().nullish(),
-    vigencia_inicio: z.string().nullish(),
-    vigencia_fin: z.string().nullish(),
+    // Pólizas del caso (1:N): un solo tipo de seguro, varias pólizas del mismo
+    // siniestro. Al menos una.
+    polizas: z.array(polizaSchema).min(1, "Agrega al menos una póliza."),
     asegurados: z
       .array(aseguradoSchema)
       .min(1, "Agrega al menos un asegurado."),
@@ -111,17 +118,19 @@ export const nuevoCasoSchema = z
         }
       }
     });
-    if (
-      data.vigencia_inicio &&
-      data.vigencia_fin &&
-      data.vigencia_fin < data.vigencia_inicio
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["vigencia_fin"],
-        message: "El fin de vigencia no puede ser anterior al inicio.",
-      });
-    }
+    data.polizas.forEach((p, i) => {
+      if (
+        p.vigencia_inicio &&
+        p.vigencia_fin &&
+        p.vigencia_fin < p.vigencia_inicio
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["polizas", i, "vigencia_fin"],
+          message: "El fin de vigencia no puede ser anterior al inicio.",
+        });
+      }
+    });
   });
 
 export type NuevoCasoSchema = z.infer<typeof nuevoCasoSchema>;

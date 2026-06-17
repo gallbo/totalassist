@@ -71,6 +71,7 @@ export async function subirArchivoCasoAction(
 
 export async function subirArchivoPolizaAction(
   casoId: number,
+  polizaId: number,
   formData: FormData,
 ): Promise<
   ActionResult<{ archivo_nombre: string | null; tiene_archivo: boolean }>
@@ -80,7 +81,7 @@ export async function subirArchivoPolizaAction(
     return { ok: false, message: "Selecciona un archivo válido." };
   }
   const result = await withToken((t) =>
-    brokerApi.subirArchivoPoliza(t, casoId, file),
+    brokerApi.subirArchivoPoliza(t, casoId, polizaId, file),
   );
   if (result.ok) {
     revalidatePath(`/casos/${casoId}`);

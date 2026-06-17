@@ -38,6 +38,7 @@ import {
   aseguradoFisicaVacio,
   normalizarAsegurados,
 } from "../../_components/asegurados-fields";
+import { PolizasFields, polizaVacia } from "../../_components/polizas-fields";
 import {
   registrarCasoAction,
   subirArchivoCasoAction,
@@ -64,7 +65,10 @@ export function NuevoCasoCliente({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [archivos, setArchivos] = useState<File[]>([]);
-  const [polizaFile, setPolizaFile] = useState<File | null>(null);
+  // Archivo por póliza, indexado por el id estable del field array de pólizas.
+  const [polizaFiles, setPolizaFiles] = useState<Record<string, File | null>>(
+    {},
+  );
   const [respuestas, setRespuestas] = useState<RespuestasCuestionario>({});
   const [erroresCuestionario, setErroresCuestionario] =
     useState<ErroresCuestionario>({});
@@ -83,7 +87,7 @@ export function NuevoCasoCliente({
       nuevoCasoSchema,
     ) as unknown as Resolver<NuevoCasoSchema>,
     defaultValues: {
-      moneda: "Moneda Nacional",
+      polizas: [polizaVacia()],
       asegurados: [aseguradoFisicaVacio()],
       beneficiarios: [],
     },
@@ -93,6 +97,12 @@ export function NuevoCasoCliente({
   const esAuto = Number(tipoSeguroId) === 1;
 
   const beneficiarios = useFieldArray({ control, name: "beneficiarios" });
+  // keyName "_key" para no pisar el campo `id` propio de cada póliza.
+  const polizas = useFieldArray({
+    control,
+    name: "polizas",
+    keyName: "_key",
+  });
 
   const preguntas = useMemo(
     () => (tipoSeguroId ? (cuestionarios[String(tipoSeguroId)] ?? []) : []),
@@ -172,10 +182,13 @@ export function NuevoCasoCliente({
       const result = await registrarCasoAction({
         ...data,
         num_siniestro_poliza: data.num_siniestro_poliza || null,
-        moneda: data.moneda || null,
-        fecha_expedicion: data.fecha_expedicion || null,
-        vigencia_inicio: data.vigencia_inicio || null,
-        vigencia_fin: data.vigencia_fin || null,
+        polizas: data.polizas.map((p) => ({
+          numero_poliza: p.numero_poliza,
+          moneda: p.moneda || null,
+          fecha_expedicion: p.fecha_expedicion || null,
+          vigencia_inicio: p.vigencia_inicio || null,
+          vigencia_fin: p.vigencia_fin || null,
+        })),
         asegurados: normalizarAsegurados(data.asegurados),
         cuestionario: cuestionarioPayload,
       });
@@ -197,18 +210,24 @@ export function NuevoCasoCliente({
       const casoId = result.data.id;
       const archivosACargar = archivos;
 
-      // Archivo de la póliza: se sube en segundo plano, igual que los demás.
-      if (polizaFile) {
-        const fd = new FormData();
-        fd.append("archivo", polizaFile);
-        void subirArchivoPolizaAction(casoId, fd).then((up) => {
-          if (!up.ok) {
-            toast.error(
-              `No se pudo subir el archivo de la póliza: ${up.message}`,
-            );
-          }
-        });
-      }
+      // Archivo de cada póliza: las pólizas creadas vuelven en orden, así que
+      // se correlacionan con el field array por índice y se sube el archivo a
+      // la póliza correcta en segundo plano.
+      result.data.polizas.forEach((creada, idx) => {
+        const field = polizas.fields[idx];
+        const file = field ? polizaFiles[field._key] : null;
+        if (file) {
+          const fd = new FormData();
+          fd.append("archivo", file);
+          void subirArchivoPolizaAction(casoId, creada.id, fd).then((up) => {
+            if (!up.ok) {
+              toast.error(
+                `No se pudo subir el archivo de la póliza ${creada.numero_poliza ?? idx + 1}: ${up.message}`,
+              );
+            }
+          });
+        }
+      });
 
       // Disparamos uploads en paralelo y dejamos que terminen en segundo
       // plano. Cada uno revalida /casos/{id} al terminar (server action
@@ -258,8 +277,7 @@ export function NuevoCasoCliente({
   const errorSeguro = !!(
     errors.tipo_seguro_id ||
     errors.aseguradora_id ||
-    errors.numero_poliza ||
-    errors.vigencia_fin
+    errors.polizas
   );
   const errorCuestionario =
     !!errors.fecha_siniestro ||
@@ -351,50 +369,23 @@ export function NuevoCasoCliente({
             )}
           />
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Field label="Número de póliza" error={errors.numero_poliza?.message}>
-            <Input {...register("numero_poliza")} />
-          </Field>
-          <Field label="Moneda">
-            <Input {...register("moneda")} />
-          </Field>
+        <div className="border-t border-neutral-100 pt-4">
+          <p className="mb-3 text-xs text-neutral-500">
+            Un caso es de un solo tipo de seguro, pero puede tener varias
+            pólizas del mismo siniestro. Agrega todas las que apliquen.
+          </p>
+          <PolizasFields
+            control={control}
+            register={register}
+            fields={polizas.fields}
+            onAppend={() => polizas.append(polizaVacia())}
+            onRemove={(i) => polizas.remove(i)}
+            files={polizaFiles}
+            onFileChange={(key, file) =>
+              setPolizaFiles((prev) => ({ ...prev, [key]: file }))
+            }
+          />
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Field label="Fecha de expedición">
-            <Input type="date" {...register("fecha_expedicion")} />
-          </Field>
-          <Field label="Inicio de vigencia">
-            <Input type="date" {...register("vigencia_inicio")} />
-          </Field>
-          <Field label="Fin de vigencia" error={errors.vigencia_fin?.message}>
-            <Input type="date" {...register("vigencia_fin")} />
-          </Field>
-        </div>
-        <Field label="Archivo de la póliza">
-          {polizaFile ? (
-            <div className="flex items-center justify-between rounded-md bg-neutral-50 px-3 py-2 text-sm">
-              <span className="truncate">{polizaFile.name}</span>
-              <button
-                type="button"
-                onClick={() => setPolizaFile(null)}
-                className="text-neutral-500 hover:text-red-600"
-                aria-label="Quitar archivo de la póliza"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          ) : (
-            <label className="flex h-20 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 text-sm text-neutral-600 hover:bg-neutral-50">
-              <Upload className="mr-2 h-5 w-5" />
-              <span>Sube el archivo de la póliza (máx 10 MB)</span>
-              <input
-                type="file"
-                className="sr-only"
-                onChange={(e) => setPolizaFile(e.target.files?.[0] ?? null)}
-              />
-            </label>
-          )}
-        </Field>
       </AccordionSection>
 
       {/* ── 2. Cuestionario del siniestro ── */}
