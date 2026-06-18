@@ -1,15 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Download,
-  ExternalLink,
-  File as FileIcon,
-  FileImage,
-  FileSpreadsheet,
-  FileText,
-  X,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatearFechaLarga } from "@/lib/fecha";
 import { EtapasCobertura } from "@/components/domain/etapas-cobertura";
@@ -20,8 +10,6 @@ const ESTATUS_TONO: Record<number, string> = {
   1: "text-state-error",
   3: "text-state-success",
 };
-
-type ArchivoPublico = CasoPublico["archivos"][number];
 
 export function SeguimientoCliente({ caso }: { caso: CasoPublico }) {
   const tono = ESTATUS_TONO[caso.estatus.id] ?? "text-state-info";
@@ -154,19 +142,6 @@ export function SeguimientoCliente({ caso }: { caso: CasoPublico }) {
           </ul>
         </section>
       )}
-
-      <section className="flex flex-col gap-3 border-t border-neutral-200 pt-6">
-        <h2 className="text-brand-navy text-base font-bold">Archivos</h2>
-        {caso.archivos.length === 0 ? (
-          <p className="text-sm text-neutral-500">Sin archivos cargados.</p>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {caso.archivos.map((a, i) => (
-              <ArchivoCard key={`${a.nombre_original}-${i}`} archivo={a} />
-            ))}
-          </div>
-        )}
-      </section>
     </div>
   );
 }
@@ -191,178 +166,4 @@ function Dato({
       <dd className="text-brand-navy font-medium">{children}</dd>
     </div>
   );
-}
-
-function ArchivoCard({ archivo }: { archivo: ArchivoPublico }) {
-  const [openVisor, setOpenVisor] = useState(false);
-  const tipo = clasificarArchivo(archivo);
-  const tamano = archivo.tamano
-    ? archivo.tamano > 1024 * 1024
-      ? `${(archivo.tamano / 1024 / 1024).toFixed(1)} MB`
-      : `${(archivo.tamano / 1024).toFixed(0)} KB`
-    : null;
-
-  const sePuedeVisualizar = tipo === "imagen";
-  const labelDescarga = tipo === "pdf" ? "Abrir" : "Descargar";
-
-  return (
-    <>
-      <div className="flex flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white">
-        <div className="relative flex h-32 items-center justify-center bg-neutral-50">
-          {tipo === "imagen" && archivo.url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={archivo.url}
-              alt={archivo.nombre_original}
-              className="h-full w-full cursor-zoom-in object-cover"
-              onClick={() => setOpenVisor(true)}
-            />
-          ) : (
-            <IconoTipo tipo={tipo} />
-          )}
-        </div>
-        <div className="flex flex-col gap-2 p-3">
-          <div className="text-brand-navy truncate text-sm font-medium">
-            {archivo.nombre_original}
-          </div>
-          <div className="text-xs text-neutral-500">
-            {labelTipo(tipo)}
-            {tamano ? ` · ${tamano}` : ""}
-          </div>
-          <div className="mt-1 flex items-center gap-2">
-            {sePuedeVisualizar && archivo.url && (
-              <button
-                type="button"
-                onClick={() => setOpenVisor(true)}
-                className="text-brand-navy inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium hover:bg-neutral-100"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                Ver
-              </button>
-            )}
-            {archivo.url && (
-              <a
-                href={archivo.url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-brand-navy inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium hover:bg-neutral-100"
-                aria-label={labelDescarga}
-              >
-                <Download className="h-3.5 w-3.5" />
-                {labelDescarga}
-              </a>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {openVisor && archivo.url && tipo === "imagen" && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-          onClick={() => setOpenVisor(false)}
-        >
-          <button
-            type="button"
-            onClick={() => setOpenVisor(false)}
-            className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white text-neutral-700 hover:bg-neutral-100"
-            aria-label="Cerrar"
-          >
-            <X className="h-5 w-5" />
-          </button>
-          <div
-            className="relative max-h-full max-w-5xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={archivo.url}
-              alt={archivo.nombre_original}
-              className="max-h-[85vh] max-w-full rounded-lg object-contain"
-            />
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-type TipoArchivo =
-  | "imagen"
-  | "pdf"
-  | "documento"
-  | "hoja-calculo"
-  | "texto"
-  | "otro";
-
-function clasificarArchivo(a: {
-  mime_type: string | null;
-  nombre_original: string;
-}): TipoArchivo {
-  const mime = (a.mime_type ?? "").toLowerCase();
-  const ext = a.nombre_original.split(".").pop()?.toLowerCase() ?? "";
-
-  if (
-    mime.startsWith("image/") ||
-    ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].includes(ext)
-  ) {
-    return "imagen";
-  }
-  if (mime === "application/pdf" || ext === "pdf") return "pdf";
-  if (
-    mime.includes("spreadsheet") ||
-    mime.includes("excel") ||
-    ["xls", "xlsx", "csv"].includes(ext)
-  ) {
-    return "hoja-calculo";
-  }
-  if (
-    mime.includes("word") ||
-    mime.includes("document") ||
-    ["doc", "docx", "odt"].includes(ext)
-  ) {
-    return "documento";
-  }
-  if (mime.startsWith("text/") || ["txt", "md"].includes(ext)) return "texto";
-  return "otro";
-}
-
-function labelTipo(tipo: TipoArchivo): string {
-  switch (tipo) {
-    case "imagen":
-      return "Imagen";
-    case "pdf":
-      return "PDF";
-    case "hoja-calculo":
-      return "Hoja de cálculo";
-    case "documento":
-      return "Documento";
-    case "texto":
-      return "Texto";
-    default:
-      return "Archivo";
-  }
-}
-
-function IconoTipo({ tipo }: { tipo: TipoArchivo }) {
-  const Icon =
-    tipo === "imagen"
-      ? FileImage
-      : tipo === "pdf" || tipo === "texto" || tipo === "documento"
-        ? FileText
-        : tipo === "hoja-calculo"
-          ? FileSpreadsheet
-          : FileIcon;
-
-  const colorClass =
-    tipo === "imagen"
-      ? "text-emerald-500"
-      : tipo === "pdf"
-        ? "text-red-500"
-        : tipo === "hoja-calculo"
-          ? "text-green-600"
-          : tipo === "documento"
-            ? "text-blue-500"
-            : "text-neutral-400";
-
-  return <Icon className={cn("h-12 w-12", colorClass)} strokeWidth={1.25} />;
 }
