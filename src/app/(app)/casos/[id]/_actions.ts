@@ -53,8 +53,14 @@ export async function subirArchivoCasoAction(
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, message: "Selecciona un archivo válido." };
   }
+  const descripcion = formData.get("descripcion");
   const result = await withToken((t) =>
-    brokerApi.subirArchivoCaso(t, casoId, file),
+    brokerApi.subirArchivoCaso(
+      t,
+      casoId,
+      file,
+      typeof descripcion === "string" ? descripcion : null,
+    ),
   );
   if (result.ok) revalidatePath(`/casos/${casoId}`);
   return result;

@@ -50,6 +50,7 @@ export function CasoDetalleVista({
   const [isPending, startTransition] = useTransition();
   const [borrandoId, setBorrandoId] = useState<number | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
+  const [descripcionArchivo, setDescripcionArchivo] = useState("");
 
   const onSubirArchivo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -61,11 +62,15 @@ export function CasoDetalleVista({
     }
     const fd = new FormData();
     fd.append("archivo", f);
+    if (descripcionArchivo.trim()) {
+      fd.append("descripcion", descripcionArchivo.trim());
+    }
     startTransition(async () => {
       const result = await subirArchivoCasoAction(caso.id, fd);
       setFileInputKey((k) => k + 1);
       if (result.ok) {
         toast.success("Archivo subido.");
+        setDescripcionArchivo("");
         router.refresh();
       } else {
         toast.error(result.message);
@@ -270,6 +275,16 @@ export function CasoDetalleVista({
           </div>
         )}
 
+        <input
+          type="text"
+          value={descripcionArchivo}
+          onChange={(e) => setDescripcionArchivo(e.target.value)}
+          disabled={isPending}
+          maxLength={500}
+          placeholder="Descripción (opcional)"
+          className="text-brand-navy focus:ring-brand-navy/30 h-11 rounded-xl bg-neutral-200/90 px-4 text-sm shadow-inner placeholder:text-neutral-500 focus:ring-2 focus:outline-none"
+        />
+
         <label className="flex h-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 text-sm text-neutral-600 hover:bg-neutral-50">
           <Upload className="mr-2 h-5 w-5" />
           <span>{isPending ? "Procesando…" : "Subir archivo (máx 10 MB)"}</span>
@@ -281,6 +296,9 @@ export function CasoDetalleVista({
             onChange={onSubirArchivo}
           />
         </label>
+        <p className="text-xs text-neutral-500">
+          La descripción se aplica al archivo que subas a continuación.
+        </p>
       </section>
 
       <div className="flex justify-end border-t border-neutral-200 pt-6">
@@ -480,6 +498,11 @@ function ArchivoCard({ archivo, onBorrar, borrando }: ArchivoCardProps) {
           <div className="text-brand-navy truncate text-sm font-medium">
             {archivo.nombre_original}
           </div>
+          {archivo.descripcion && (
+            <div className="text-xs text-neutral-600">
+              {archivo.descripcion}
+            </div>
+          )}
           <div className="text-xs text-neutral-500">
             {labelTipo(tipo)}
             {tamano ? ` · ${tamano}` : ""}

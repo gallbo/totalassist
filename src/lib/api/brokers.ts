@@ -222,6 +222,7 @@ export type CasoBeneficiario = {
 export type CasoArchivo = {
   id: number;
   nombre_original: string;
+  descripcion: string | null;
   mime_type: string | null;
   tamano: number | null;
   url: string | null;
@@ -700,6 +701,7 @@ export const brokerApi = {
     token: string,
     casoId: number,
     archivo: File,
+    descripcion?: string | null,
   ): Promise<CasoArchivo> {
     // Usamos fetch directamente en lugar de axios porque axios v1 en Node 18+
     // no arma bien el body multipart cuando recibe la FormData global del runtime
@@ -707,6 +709,9 @@ export const brokerApi = {
     // respondía 422 archivo_requerido.
     const form = new FormData();
     form.append("archivo", archivo);
+    if (descripcion && descripcion.trim()) {
+      form.append("descripcion", descripcion.trim());
+    }
 
     const res = await fetch(`${baseURL}/api/brokers/casos/${casoId}/archivos`, {
       method: "POST",
