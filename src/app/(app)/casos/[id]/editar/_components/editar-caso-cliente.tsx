@@ -186,6 +186,15 @@ export function EditarCasoCliente({
         respuestas[p.pregunta_id]?.trim() ?? "";
     }
 
+    // Snapshot del archivo de cada póliza ANTES del await: las existentes se
+    // ubican por su id; las nuevas por número de póliza contra el detalle que
+    // devuelve el PUT. Tomarlo aquí evita re-leer polizas.fields tras el await.
+    const archivosPolizaEdit = polizas.fields.map((field, idx) => ({
+      file: polizaFiles[field._key] ?? null,
+      existenteId: (field as { id?: number }).id,
+      numero: data.polizas[idx]?.numero_poliza,
+    }));
+
     startTransition(async () => {
       const result = await actualizarCasoAction(caso.id, {
         aseguradora_id: data.aseguradora_id,
@@ -210,28 +219,28 @@ export function EditarCasoCliente({
         return;
       }
 
-      // Archivos nuevos por póliza. Las existentes se ubican por id; las nuevas,
-      // por número de póliza contra el detalle actualizado que devuelve el PUT.
+      // Archivos nuevos por póliza. Se esperan ANTES de navegar: si se dispararan
+      // en segundo plano, el router.push de abajo desmonta la página y aborta la
+      // subida en vuelo (el archivo se perdía).
       const idPorNumero = new Map(
         result.data.polizas.map((p) => [p.numero_poliza, p.id]),
       );
-      polizas.fields.forEach((field, idx) => {
-        const file = polizaFiles[field._key];
-        if (!file) return;
-        const existenteId = (field as { id?: number }).id;
-        const polizaId =
-          existenteId ?? idPorNumero.get(data.polizas[idx].numero_poliza);
-        if (!polizaId) return;
-        const fd = new FormData();
-        fd.append("archivo", file);
-        void subirArchivoPolizaAction(caso.id, polizaId, fd).then((up) => {
-          if (!up.ok) {
-            toast.error(
-              `No se pudo subir el archivo de la póliza ${data.polizas[idx].numero_poliza}: ${up.message}`,
-            );
-          }
-        });
-      });
+      await Promise.all(
+        archivosPolizaEdit.map((item) => {
+          if (!item.file) return Promise.resolve();
+          const polizaId = item.existenteId ?? idPorNumero.get(item.numero);
+          if (!polizaId) return Promise.resolve();
+          const fd = new FormData();
+          fd.append("archivo", item.file);
+          return subirArchivoPolizaAction(caso.id, polizaId, fd).then((up) => {
+            if (!up.ok) {
+              toast.error(
+                `No se pudo subir el archivo de la póliza ${item.numero}: ${up.message}`,
+              );
+            }
+          });
+        }),
+      );
 
       // Las respuestas del cuestionario se guardan aparte (endpoint propio).
       const resultCuestionario = await guardarCuestionarioAction(
@@ -286,7 +295,7 @@ export function EditarCasoCliente({
             render={({ field, fieldState }) => (
               <div className="flex flex-col gap-1">
                 <SelectPill
-                  label="Tipo de seguro *"
+                  label="Tipo de seguro"
                   options={tiposSeguro.map((t) => ({
                     value: String(t.id),
                     label: t.nombre,
@@ -309,7 +318,7 @@ export function EditarCasoCliente({
             render={({ field, fieldState }) => (
               <div className="flex flex-col gap-1">
                 <SelectPill
-                  label="Aseguradora *"
+                  label="Aseguradora"
                   options={aseguradoras.map((a) => ({
                     value: String(a.id),
                     label: a.nombre,

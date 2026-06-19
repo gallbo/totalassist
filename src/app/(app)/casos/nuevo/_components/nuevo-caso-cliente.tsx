@@ -178,6 +178,14 @@ export function NuevoCasoCliente({
       if (valor) cuestionarioPayload[String(p.pregunta_id)] = valor;
     }
 
+    // Snapshot del archivo de cada póliza en el orden del field array, ANTES de
+    // crear el caso. Las pólizas vuelven del backend en ese mismo orden, así que
+    // se correlacionan por índice. Tomarlo aquí evita re-leer polizas.fields tras
+    // el await (las keys pueden cambiar) y perder el archivo.
+    const archivosPolizaEnOrden = polizas.fields.map(
+      (f) => polizaFiles[f._key] ?? null,
+    );
+
     startTransition(async () => {
       const result = await registrarCasoAction({
         ...data,
@@ -210,24 +218,25 @@ export function NuevoCasoCliente({
       const casoId = result.data.id;
       const archivosACargar = archivos;
 
-      // Archivo de cada póliza: las pólizas creadas vuelven en orden, así que
-      // se correlacionan con el field array por índice y se sube el archivo a
-      // la póliza correcta en segundo plano.
-      result.data.polizas.forEach((creada, idx) => {
-        const field = polizas.fields[idx];
-        const file = field ? polizaFiles[field._key] : null;
-        if (file) {
+      // Archivo de cada póliza: se esperan ANTES de navegar. Si se dispararan en
+      // segundo plano, el router.push de abajo desmonta la página y aborta la
+      // subida en vuelo (el archivo se perdía). Es un solo archivo chico por
+      // póliza, así que esperar no afecta la experiencia.
+      await Promise.all(
+        result.data.polizas.map((creada, idx) => {
+          const file = archivosPolizaEnOrden[idx] ?? null;
+          if (!file) return Promise.resolve();
           const fd = new FormData();
           fd.append("archivo", file);
-          void subirArchivoPolizaAction(casoId, creada.id, fd).then((up) => {
+          return subirArchivoPolizaAction(casoId, creada.id, fd).then((up) => {
             if (!up.ok) {
               toast.error(
                 `No se pudo subir el archivo de la póliza ${creada.numero_poliza ?? idx + 1}: ${up.message}`,
               );
             }
           });
-        }
-      });
+        }),
+      );
 
       // Disparamos uploads en paralelo y dejamos que terminen en segundo
       // plano. Cada uno revalida /casos/{id} al terminar (server action
@@ -328,7 +337,7 @@ export function NuevoCasoCliente({
             render={({ field, fieldState }) => (
               <div className="flex flex-col gap-1">
                 <SelectPill
-                  label="Tipo de seguro *"
+                  label="Tipo de seguro"
                   options={tiposSeguro.map((t) => ({
                     value: String(t.id),
                     label: t.nombre,
@@ -351,7 +360,7 @@ export function NuevoCasoCliente({
             render={({ field, fieldState }) => (
               <div className="flex flex-col gap-1">
                 <SelectPill
-                  label="Aseguradora *"
+                  label="Aseguradora"
                   options={aseguradoras.map((a) => ({
                     value: String(a.id),
                     label: a.nombre,
