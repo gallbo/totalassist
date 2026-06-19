@@ -17,6 +17,12 @@ const nextConfig: NextConfig = {
     staleTimes: {
       dynamic: 0,
     },
+    // Las subidas de archivos (caso y póliza) viajan como FormData a través de
+    // server actions. El default de 1 MB rechazaba PDFs reales; el backend
+    // permite hasta 10 MB, así que se deja margen para el overhead del encoding.
+    serverActions: {
+      bodySizeLimit: "12mb",
+    },
   },
 };
 

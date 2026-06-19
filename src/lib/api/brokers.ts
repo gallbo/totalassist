@@ -155,6 +155,7 @@ export type CasoPoliza = {
   vigencia_fin: string | null;
   archivo_nombre: string | null;
   tiene_archivo: boolean;
+  archivo_url: string | null;
 };
 
 // Póliza tal como viaja en el alta/edición del caso. `id` solo en edición:

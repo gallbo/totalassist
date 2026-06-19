@@ -157,7 +157,21 @@ export function CasoDetalleVista({
                       ? `${formatearFechaLarga(p.vigencia_inicio)} – ${formatearFechaLarga(p.vigencia_fin)}`
                       : "—"}
                   </Dato>
-                  <Dato label="Archivo">{p.archivo_nombre ?? "—"}</Dato>
+                  <Dato label="Archivo">
+                    {p.archivo_url ? (
+                      <a
+                        href={p.archivo_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-brand-navy inline-flex items-center gap-1 hover:underline"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        {p.archivo_nombre ?? "Descargar"}
+                      </a>
+                    ) : (
+                      (p.archivo_nombre ?? "—")
+                    )}
+                  </Dato>
                 </dl>
               </div>
             ))}
