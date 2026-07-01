@@ -11,6 +11,12 @@ export type RegistrarBrokerInput = {
   password: string;
   cedula: string;
   telefono?: string;
+  acepta_terminos: boolean;
+  terminos_version: string;
+};
+
+export type BrokerConfig = {
+  registro_casos_habilitado: boolean;
 };
 
 export type RegistrarBrokerResponse = {
@@ -122,6 +128,8 @@ export type PaqueteCatalogo = {
   numero_casos: number;
   precio: string;
   vigencia_dias: number;
+  fecha_fin: string | null;
+  mensual: boolean;
 };
 
 export type PaqueteContratado = {
@@ -614,6 +622,13 @@ export const brokerApi = {
   getCatalogoPaquetes(token: string) {
     return request<PaqueteCatalogo[]>(
       { method: "GET", url: "/api/brokers/paquetes/catalogo" },
+      token,
+    );
+  },
+
+  getConfig(token: string) {
+    return request<BrokerConfig>(
+      { method: "GET", url: "/api/brokers/config" },
       token,
     );
   },

@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageCard } from "@/components/layout/page-card";
+import { BrandButton } from "@/components/ui/brand-button";
+import { MENSAJE_REGISTRO_CASOS_DESHABILITADO } from "@/lib/api/errors";
 import {
   brokerApi,
   type Aseguradora,
@@ -27,6 +30,30 @@ export default async function NuevoCasoPage() {
   const token = await getServerAccessToken();
   if (!token) {
     redirect("/login");
+  }
+
+  const config = await brokerApi.getConfig(token).catch(() => null);
+  if (config && !config.registro_casos_habilitado) {
+    return (
+      <PageCard>
+        <div className="flex flex-col items-start gap-4">
+          <h1 className="text-brand-navy text-lg font-bold">
+            Registro de casos en pausa
+          </h1>
+          <p className="max-w-prose text-sm leading-relaxed text-neutral-600">
+            {MENSAJE_REGISTRO_CASOS_DESHABILITADO}
+          </p>
+          <BrandButton
+            type="button"
+            tone="secondary"
+            render={<Link href="/casos" />}
+            className="h-11 px-6"
+          >
+            Volver a mis casos
+          </BrandButton>
+        </div>
+      </PageCard>
+    );
   }
 
   let datos: Datos;

@@ -3,12 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Plus, Search } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { BrandButton } from "@/components/ui/brand-button";
 import { cn } from "@/lib/utils";
 import { formatearFechaLarga } from "@/lib/fecha";
 import type { CasoResumen, ListaCasos } from "@/lib/api/brokers";
+import { NuevoCasoBoton } from "./nuevo-caso-boton";
 
 const ESTATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "todos", label: "Todos" },
@@ -21,9 +22,17 @@ type Props = {
   initial: ListaCasos;
   initialQuery: string;
   initialEstatus: string;
+  registroHabilitado: boolean;
+  tieneCupo: boolean;
 };
 
-export function CasosTable({ initial, initialQuery, initialEstatus }: Props) {
+export function CasosTable({
+  initial,
+  initialQuery,
+  initialEstatus,
+  registroHabilitado,
+  tieneCupo,
+}: Props) {
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [estatus, setEstatus] = useState(initialEstatus);
@@ -70,13 +79,10 @@ export function CasosTable({ initial, initialQuery, initialEstatus }: Props) {
         </div>
 
         <div className="flex gap-3">
-          <BrandButton
-            type="button"
-            render={<Link href="/casos/nuevo" />}
-            className="h-11 px-6"
-          >
-            <Plus className="mr-1 h-4 w-4" /> Nuevo caso
-          </BrandButton>
+          <NuevoCasoBoton
+            habilitado={registroHabilitado}
+            tieneCupo={tieneCupo}
+          />
 
           <div className="relative">
             <BrandButton

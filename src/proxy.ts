@@ -7,7 +7,13 @@ const publicRoutes = [
   "/recuperar-acceso",
   "/restablecer",
 ];
-const sharedRoutes = ["/ayuda", "/condiciones", "/privacidad", "/seguimiento"];
+const sharedRoutes = [
+  "/ayuda",
+  "/condiciones",
+  "/privacidad",
+  "/terminos",
+  "/seguimiento",
+];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;

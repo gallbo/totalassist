@@ -27,13 +27,26 @@ export default async function CasosPage({
   const estatusCaso = params.estatus_caso ?? "todos";
 
   let lista: ListaCasos | null = null;
+  let registroHabilitado = true;
+  let tieneCupo = true;
   try {
-    lista = await brokerApi.getCasos(token, {
-      page,
-      per_page: 20,
-      q: q || undefined,
-      estatus_caso: estatusCaso !== "todos" ? Number(estatusCaso) : undefined,
-    });
+    const [listaResp, config, paquetes] = await Promise.all([
+      brokerApi.getCasos(token, {
+        page,
+        per_page: 20,
+        q: q || undefined,
+        estatus_caso: estatusCaso !== "todos" ? Number(estatusCaso) : undefined,
+      }),
+      brokerApi.getConfig(token).catch(() => null),
+      brokerApi.getPaquetes(token).catch(() => null),
+    ]);
+    lista = listaResp;
+    if (config) {
+      registroHabilitado = config.registro_casos_habilitado;
+    }
+    if (paquetes) {
+      tieneCupo = paquetes.some((p) => p.activo);
+    }
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       redirect("/login");
@@ -56,6 +69,8 @@ export default async function CasosPage({
         initial={lista}
         initialQuery={q}
         initialEstatus={estatusCaso}
+        registroHabilitado={registroHabilitado}
+        tieneCupo={tieneCupo}
       />
     </PageCard>
   );

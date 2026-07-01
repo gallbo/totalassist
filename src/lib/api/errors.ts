@@ -1,6 +1,9 @@
 const FALLBACK_GENERICO =
   "Ocurrió un problema, intenta de nuevo. Si persiste, contáctanos.";
 
+export const MENSAJE_REGISTRO_CASOS_DESHABILITADO =
+  "Por el momento no estamos recibiendo casos nuevos por la alta demanda. Te avisaremos en cuanto podamos habilitar el registro de nuevo.";
+
 const MENSAJES_POR_CODIGO: Record<string, string> = {
   cedula_invalida:
     "No encontramos tu cédula en el padrón de CNSF. Verifica el número.",
@@ -12,6 +15,7 @@ const MENSAJES_POR_CODIGO: Record<string, string> = {
   cuenta_inexistente: "No encontramos una cuenta con ese correo.",
   no_autenticado: "Tu sesión expiró. Vuelve a iniciar sesión.",
   sin_cupos: "Tu paquete activo no tiene cupos disponibles.",
+  registro_casos_deshabilitado: MENSAJE_REGISTRO_CASOS_DESHABILITADO,
   paquete_invalido: "Ese paquete no está disponible.",
   paquete_vigente_existente:
     "Ya tienes un paquete vigente. Podrás contratar otro cuando caduque.",

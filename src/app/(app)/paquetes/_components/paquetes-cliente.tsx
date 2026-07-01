@@ -94,10 +94,10 @@ export function PaquetesCliente({ paquetes, catalogo }: Props) {
                         {p.descripcion ?? "Paquete"}
                       </td>
                       <td className="px-5 py-4 text-neutral-600">
-                        {p.fecha_contratacion ?? "—"}
+                        {formatearFechaLarga(p.fecha_contratacion)}
                       </td>
                       <td className="px-5 py-4 text-neutral-600">
-                        {p.fecha_expiracion ?? "—"}
+                        {formatearFechaLarga(p.fecha_expiracion)}
                       </td>
                       <td className="px-5 py-4 text-neutral-600">
                         {p.casos_restantes} / {p.numero_casos}
@@ -124,9 +124,9 @@ export function PaquetesCliente({ paquetes, catalogo }: Props) {
                     <EstadoPaquete paquete={p} />
                   </div>
                   <div className="text-xs text-neutral-500">
-                    {(p.fecha_contratacion ?? "—") +
+                    {formatearFechaLarga(p.fecha_contratacion) +
                       " → " +
-                      (p.fecha_expiracion ?? "—")}
+                      formatearFechaLarga(p.fecha_expiracion)}
                   </div>
                   <div className="text-xs text-neutral-600">
                     Casos restantes: {p.casos_restantes} / {p.numero_casos}
@@ -188,9 +188,11 @@ export function PaquetesCliente({ paquetes, catalogo }: Props) {
                         </dd>
                       </div>
                       <div className="flex gap-2">
-                        <dt>Duración:</dt>
+                        <dt>{p.fecha_fin ? "Vigencia:" : "Duración:"}</dt>
                         <dd className="text-brand-navy font-semibold">
-                          {p.vigencia_dias} días
+                          {p.fecha_fin
+                            ? `Hasta el ${formatearFechaLarga(p.fecha_fin)}`
+                            : `${p.vigencia_dias} días`}
                         </dd>
                       </div>
                     </dl>
