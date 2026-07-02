@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Modal } from "@/components/ui/modal";
-import { MENSAJE_REGISTRO_CASOS_DESHABILITADO } from "@/lib/api/errors";
+import { MensajeAltaDemanda } from "@/components/mensaje-alta-demanda";
 
 export function NuevoCasoBoton({
   habilitado,
@@ -48,15 +48,14 @@ export function NuevoCasoBoton({
           footer={
             <BrandButton
               type="button"
-              tone="secondary"
               className="h-10 px-6"
               onClick={() => setOpen(false)}
             >
-              Entendido
+              Aceptar
             </BrandButton>
           }
         >
-          {MENSAJE_REGISTRO_CASOS_DESHABILITADO}
+          <MensajeAltaDemanda />
         </Modal>
       ) : (
         <Modal

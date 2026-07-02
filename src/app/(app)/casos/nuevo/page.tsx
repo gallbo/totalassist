@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageCard } from "@/components/layout/page-card";
 import { BrandButton } from "@/components/ui/brand-button";
-import { MENSAJE_REGISTRO_CASOS_DESHABILITADO } from "@/lib/api/errors";
+import { MensajeAltaDemanda } from "@/components/mensaje-alta-demanda";
 import {
   brokerApi,
   type Aseguradora,
@@ -41,7 +41,7 @@ export default async function NuevoCasoPage() {
             Registro de casos en pausa
           </h1>
           <p className="max-w-prose text-sm leading-relaxed text-neutral-600">
-            {MENSAJE_REGISTRO_CASOS_DESHABILITADO}
+            <MensajeAltaDemanda />
           </p>
           <BrandButton
             type="button"

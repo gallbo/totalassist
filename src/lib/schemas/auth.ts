@@ -46,9 +46,6 @@ export const registerSchema = z
     cedula: cedulaPolicy,
     password: passwordPolicy,
     password_confirmation: z.string(),
-    acepta_terminos: z.boolean().refine((v) => v === true, {
-      message: "Debes aceptar los términos y condiciones para continuar.",
-    }),
   })
   .refine((data) => data.password === data.password_confirmation, {
     message: "Las contraseñas no coinciden",

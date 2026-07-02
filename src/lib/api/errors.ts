@@ -2,7 +2,7 @@ const FALLBACK_GENERICO =
   "Ocurrió un problema, intenta de nuevo. Si persiste, contáctanos.";
 
 export const MENSAJE_REGISTRO_CASOS_DESHABILITADO =
-  "Por el momento no estamos recibiendo casos nuevos por la alta demanda. Te avisaremos en cuanto podamos habilitar el registro de nuevo.";
+  "Hemos excedido nuestra capacidad mensual para atender siniestros durante el PERIODO DE PRUEBA, en breve restableceremos el servicio notificándote al correo electrónico registrado y a través de la plataforma TOTAL ASSIST.";
 
 const MENSAJES_POR_CODIGO: Record<string, string> = {
   cedula_invalida:
