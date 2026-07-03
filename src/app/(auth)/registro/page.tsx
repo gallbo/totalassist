@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Separator } from "@/components/ui/separator";
@@ -17,6 +16,11 @@ import { brokerApi } from "@/lib/api/brokers";
 import { ApiError } from "@/lib/api/client";
 import { TERMINOS_VERSION } from "@/lib/terminos";
 import { TerminosModal } from "@/components/terminos-modal";
+import {
+  PRIVACIDAD_CONSENTIMIENTO,
+  PRIVACIDAD_VERSION,
+} from "@/lib/privacidad";
+import { AvisoPrivacidadModal } from "@/components/aviso-privacidad-modal";
 
 const ERROR_FIELD_MAP: Record<string, keyof RegisterInput> = {
   email_duplicado: "email",
@@ -26,9 +30,10 @@ const ERROR_FIELD_MAP: Record<string, keyof RegisterInput> = {
 export default function RegistroPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
-  const [terminosOpen, setTerminosOpen] = useState(false);
+  const [terminosOpen, setTerminosOpen] = useState(true);
   const [terminosAceptados, setTerminosAceptados] = useState(false);
-  const [pendiente, setPendiente] = useState<RegisterInput | null>(null);
+  const [privacidadOpen, setPrivacidadOpen] = useState(false);
+  const [privacidadAceptada, setPrivacidadAceptada] = useState(false);
 
   const {
     register,
@@ -62,6 +67,8 @@ export default function RegistroPage() {
         password: values.password,
         acepta_terminos: true,
         terminos_version: TERMINOS_VERSION,
+        acepta_privacidad: true,
+        privacidad_version: PRIVACIDAD_VERSION,
       });
 
       toast.success("Cuenta creada. Inicia sesión con tus credenciales.");
@@ -85,22 +92,22 @@ export default function RegistroPage() {
     }
   };
 
-  // Formulario valido: si ya aceptó los términos, reintenta el registro directo
-  // (sin volver a abrir el modal). Si no, abre el modal de términos.
+  // Las aceptaciones se hacen en los popups al abrir la vista; el boton de
+  // envio queda bloqueado hasta que ambas casillas esten marcadas.
   const onValid = (values: RegisterInput) => {
-    if (terminosAceptados) {
-      void confirmarRegistro(values);
-      return;
-    }
-    setPendiente(values);
-    setTerminosOpen(true);
+    void confirmarRegistro(values);
   };
 
+  // Al aceptar los terminos se cierra su popup y se abre el del aviso.
   const aceptarTerminos = () => {
-    if (!pendiente) return;
     setTerminosAceptados(true);
     setTerminosOpen(false);
-    void confirmarRegistro(pendiente);
+    setPrivacidadOpen(true);
+  };
+
+  const aceptarPrivacidad = () => {
+    setPrivacidadAceptada(true);
+    setPrivacidadOpen(false);
   };
 
   return (
@@ -211,20 +218,74 @@ export default function RegistroPage() {
           </Field>
         </div>
 
-        {terminosAceptados ? (
-          <p className="text-state-success flex items-center justify-center gap-1.5 text-center text-sm font-medium">
-            <Check className="h-4 w-4" />
-            Términos y condiciones aceptados
-          </p>
-        ) : (
-          <p className="text-center text-sm text-neutral-500">
-            Al continuar te mostraremos los términos y condiciones que debes
-            aceptar para crear tu cuenta.
-          </p>
-        )}
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-neutral-100 p-4 text-xs leading-relaxed text-neutral-600">
+          <input
+            type="checkbox"
+            checked={terminosAceptados}
+            onChange={() => {
+              if (terminosAceptados) {
+                setTerminosAceptados(false);
+              } else {
+                setTerminosOpen(true);
+              }
+            }}
+            className="accent-brand-navy mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
+          />
+          <span>
+            He leído y acepto los{" "}
+            <a
+              href="/terminos"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-navy font-semibold hover:underline"
+            >
+              Términos y Condiciones
+            </a>
+            .
+          </span>
+        </label>
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-neutral-100 p-4 text-xs leading-relaxed text-neutral-600">
+          <input
+            type="checkbox"
+            checked={privacidadAceptada}
+            onChange={() => {
+              if (privacidadAceptada) {
+                setPrivacidadAceptada(false);
+              } else {
+                setPrivacidadOpen(true);
+              }
+            }}
+            className="accent-brand-navy mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
+          />
+          <span>
+            {PRIVACIDAD_CONSENTIMIENTO.pre}
+            <a
+              href={PRIVACIDAD_CONSENTIMIENTO.urlSite}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-navy font-semibold hover:underline"
+            >
+              totalclaimassist.com/avisodeprivacidadagentes
+            </a>
+            {PRIVACIDAD_CONSENTIMIENTO.mid}
+            <a
+              href="/privacidad"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-navy font-semibold hover:underline"
+            >
+              totalclaimassist.app/privacidad
+            </a>
+            {PRIVACIDAD_CONSENTIMIENTO.post}
+          </span>
+        </label>
 
         <div className="flex justify-center">
-          <BrandButton type="submit" disabled={submitting}>
+          <BrandButton
+            type="submit"
+            disabled={submitting || !terminosAceptados || !privacidadAceptada}
+          >
             {submitting ? "Registrando..." : "Registrarme"}
           </BrandButton>
         </div>
@@ -239,10 +300,12 @@ export default function RegistroPage() {
         </p>
       </form>
 
-      <TerminosModal
-        open={terminosOpen}
-        onClose={() => setTerminosOpen(false)}
-        onAccept={aceptarTerminos}
+      <TerminosModal open={terminosOpen} onAccept={aceptarTerminos} />
+
+      <AvisoPrivacidadModal
+        open={privacidadOpen}
+        onAccept={aceptarPrivacidad}
+        integralHref="/privacidad"
       />
     </>
   );

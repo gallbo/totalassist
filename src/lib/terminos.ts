@@ -3,6 +3,9 @@ export const TERMINOS_VERSION = "2026-07-01";
 export const TERMINOS_TITULO =
   "TÉRMINOS Y CONDICIONES PARA LA PRESTACIÓN DEL SERVICIO DURANTE EL PERIODO DE PRUEBA";
 
+export const TERMINOS_ACEPTO_CHECKBOX =
+  "He leído y acepto los Términos y Condiciones.";
+
 export const TERMINOS_PARRAFOS: string[] = [
   `Del 1 de julio al 31 de diciembre del 2026, (el "PERIODO DE PRUEBA"), Claim Assist México, Sociedad Civil (la "EMPRESA"), pondrá de manera gratuita a disposición de todo "AGENTE DE SEGUROS" (según este término se define en el artículo 91 de la Ley de Instituciones de Seguros y Fianzas, en lo sucesivo "USTED") que se registre en la plataforma de TOTAL ASSIST, el "SERVICIO DE RECLAMACIÓN ESTRATÉGICA" (según este término se define más adelante) para la reclamación de 3 (tres) siniestros.`,
   `Para brindar un servicio profesional de calidad, durante el PERIODO DE PRUEBA, la EMPRESA solo admitirá un determinado número de reclamaciones gratuitas al mes, mismo que se determinará libremente por ésta con base en el número de especialistas de seguros que se encuentren disponibles y sus cargas de trabajo. En este sentido, una vez rebasado el umbral mensual descrito, la plataforma tecnológica de TOTAL ASSIST bloqueará la carga de nuevas reclamaciones, USTED podrá intentarlo nuevamente en cuanto la EMPRESA le notifique que existe disponibilidad al correo electrónico registrado y vía la plataforma de TOTAL ASSIST.`,

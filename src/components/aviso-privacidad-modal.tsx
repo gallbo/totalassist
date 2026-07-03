@@ -2,21 +2,23 @@
 
 import { useEffect, useState } from "react";
 import {
-  TERMINOS_ACEPTO_CHECKBOX,
-  TERMINOS_INCISOS,
-  TERMINOS_PARRAFOS,
-  TERMINOS_TITULO,
-  TERMINOS_VERSION,
-} from "@/lib/terminos";
+  PRIVACIDAD_SIMPLIFICADO,
+  PRIVACIDAD_SIMPLIFICADO_CHECKBOX,
+  PRIVACIDAD_SIMPLIFICADO_TITULO,
+  PRIVACIDAD_SUBTITULO,
+  PRIVACIDAD_VERSION,
+} from "@/lib/privacidad";
 
-// Popup de términos y condiciones que salta al abrir el registro.
+// Popup del aviso de privacidad simplificado que salta al abrir el registro.
 // No se puede cerrar hasta marcar la casilla (no hay backdrop, Escape ni X).
-export function TerminosModal({
+export function AvisoPrivacidadModal({
   open,
   onAccept,
+  integralHref,
 }: {
   open: boolean;
   onAccept: () => void;
+  integralHref: string;
 }) {
   const [leido, setLeido] = useState(false);
 
@@ -34,29 +36,57 @@ export function TerminosModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Términos y condiciones"
+      aria-label="Aviso de privacidad"
       className="fixed inset-0 z-[110] flex items-center justify-center p-4"
     >
       <div className="absolute inset-0 bg-black/60" />
       <div className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white text-neutral-900 shadow-2xl">
         <div className="border-b border-neutral-200 p-5">
           <h2 className="text-brand-navy text-base font-bold sm:text-lg">
-            {TERMINOS_TITULO}
+            {PRIVACIDAD_SIMPLIFICADO_TITULO}
           </h2>
+          <p className="text-brand-navy mt-0.5 text-sm font-semibold">
+            {PRIVACIDAD_SUBTITULO}
+          </p>
           <p className="mt-1 text-xs text-neutral-500">
-            Versión {TERMINOS_VERSION}
+            Versión {PRIVACIDAD_VERSION}
           </p>
         </div>
 
         <div className="space-y-4 overflow-y-auto p-5 text-sm leading-relaxed text-neutral-700">
-          {TERMINOS_PARRAFOS.map((parrafo, i) => (
-            <p key={i}>{parrafo}</p>
+          {PRIVACIDAD_SIMPLIFICADO.map((seccion, i) => (
+            <div key={i} className="space-y-2">
+              {seccion.titulo && (
+                <h3 className="text-brand-navy text-sm font-semibold">
+                  {seccion.titulo}
+                </h3>
+              )}
+              {seccion.parrafos?.map((parrafo, j) => (
+                <p key={j}>{parrafo}</p>
+              ))}
+              {seccion.incisos && (
+                <ul className="list-disc space-y-1 pl-6">
+                  {seccion.incisos.map((inciso, j) => (
+                    <li key={j}>{inciso}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
           ))}
-          <div className="space-y-2 pl-4">
-            {TERMINOS_INCISOS.map((inciso, i) => (
-              <p key={i}>{inciso}</p>
-            ))}
-          </div>
+
+          <p>
+            Este Aviso de Privacidad es simplificado. Para consultar el Aviso de
+            Privacidad integral, ingrese al siguiente enlace:{" "}
+            <a
+              href={integralHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-navy font-semibold underline"
+            >
+              Aviso de Privacidad integral
+            </a>
+            .
+          </p>
         </div>
 
         <div className="space-y-4 border-t border-neutral-200 p-5">
@@ -67,7 +97,7 @@ export function TerminosModal({
               onChange={(e) => setLeido(e.target.checked)}
               className="accent-brand-navy mt-0.5 h-5 w-5 shrink-0 cursor-pointer"
             />
-            <span>{TERMINOS_ACEPTO_CHECKBOX}</span>
+            <span>{PRIVACIDAD_SIMPLIFICADO_CHECKBOX}</span>
           </label>
 
           <div className="flex justify-end">

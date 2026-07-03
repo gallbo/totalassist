@@ -13,6 +13,8 @@ export type RegistrarBrokerInput = {
   telefono?: string;
   acepta_terminos: boolean;
   terminos_version: string;
+  acepta_privacidad: boolean;
+  privacidad_version: string;
 };
 
 export type BrokerConfig = {
