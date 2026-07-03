@@ -257,6 +257,7 @@ export type CasoResumen = {
 export type EtapaCobertura = {
   nombre: string | null;
   estatus: "pendiente" | "activa" | "finalizada";
+  porcentaje?: number;
 };
 
 export type ResultadoCobertura = {
@@ -270,6 +271,7 @@ export type CoberturaCaso = {
   nombre: string | null;
   etapa_actual: string | null;
   ultima_actividad: string | null;
+  avance?: number;
   resultado: ResultadoCobertura | null;
   etapas: EtapaCobertura[];
 };
@@ -296,6 +298,7 @@ export type CasoDetalle = CasoResumen & {
   beneficiarios: CasoBeneficiario[];
   archivos: CasoArchivo[];
   coberturas: CoberturaCaso[];
+  avance_general?: number;
   paquete: { id: number; descripcion: string | null } | null;
 };
 
