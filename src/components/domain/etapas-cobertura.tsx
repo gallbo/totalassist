@@ -1,8 +1,15 @@
-import { CheckCircle2, CircleDot, ShieldCheck, XCircle } from "lucide-react";
+import {
+  Check,
+  CheckCircle2,
+  CircleDot,
+  ShieldCheck,
+  XCircle,
+} from "lucide-react";
 
 export type EtapaCoberturaItem = {
   nombre: string | null;
   estatus: "pendiente" | "activa" | "finalizada";
+  porcentaje?: number;
 };
 
 export type ResultadoCoberturaItem = {
@@ -16,14 +23,9 @@ export type CoberturaConEtapas = {
   nombre: string | null;
   etapa_actual: string | null;
   ultima_actividad?: string | null;
+  avance?: number;
   resultado?: ResultadoCoberturaItem | null;
   etapas: EtapaCoberturaItem[];
-};
-
-const COLOR_SEGMENTO: Record<EtapaCoberturaItem["estatus"], string> = {
-  pendiente: "bg-neutral-300",
-  activa: "bg-brand-yellow",
-  finalizada: "bg-state-success",
 };
 
 const LABEL_ESTATUS: Record<EtapaCoberturaItem["estatus"], string> = {
@@ -31,6 +33,82 @@ const LABEL_ESTATUS: Record<EtapaCoberturaItem["estatus"], string> = {
   activa: "En proceso",
   finalizada: "Finalizada",
 };
+
+const COLOR_ESTATUS: Record<EtapaCoberturaItem["estatus"], string> = {
+  pendiente: "text-neutral-400",
+  activa: "font-semibold text-amber-600",
+  finalizada: "font-medium text-state-success",
+};
+
+function NodoEtapa({ estatus }: { estatus: EtapaCoberturaItem["estatus"] }) {
+  if (estatus === "finalizada") {
+    return (
+      <span className="bg-state-success flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white">
+        <Check className="h-4 w-4" strokeWidth={3} />
+      </span>
+    );
+  }
+  if (estatus === "activa") {
+    return (
+      <span className="bg-brand-yellow ring-brand-yellow/25 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ring-4">
+        <span className="h-2.5 w-2.5 rounded-full bg-white" />
+      </span>
+    );
+  }
+  return (
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-neutral-300 bg-white">
+      <span className="h-2 w-2 rounded-full bg-neutral-300" />
+    </span>
+  );
+}
+
+function Stepper({ etapas }: { etapas: EtapaCoberturaItem[] }) {
+  return (
+    <div className="flex items-start pt-1">
+      {etapas.map((etapa, i) => {
+        const esPrimera = i === 0;
+        const esUltima = i === etapas.length - 1;
+        const conectorIzq =
+          !esPrimera && etapas[i - 1].estatus === "finalizada"
+            ? "bg-state-success"
+            : "bg-neutral-200";
+        const conectorDer =
+          etapa.estatus === "finalizada"
+            ? "bg-state-success"
+            : "bg-neutral-200";
+
+        return (
+          <div
+            key={i}
+            className="flex flex-1 flex-col items-center text-center"
+          >
+            <div className="flex w-full items-center">
+              <div
+                className={`h-0.5 flex-1 ${esPrimera ? "bg-transparent" : conectorIzq}`}
+              />
+              <NodoEtapa estatus={etapa.estatus} />
+              <div
+                className={`h-0.5 flex-1 ${esUltima ? "bg-transparent" : conectorDer}`}
+              />
+            </div>
+            <p className="text-brand-navy mt-1.5 px-1 text-[11px] leading-tight font-medium">
+              {etapa.nombre ?? `Etapa ${i + 1}`}
+            </p>
+            <p
+              className={`text-[11px] leading-tight ${COLOR_ESTATUS[etapa.estatus]}`}
+            >
+              {LABEL_ESTATUS[etapa.estatus]}
+              {etapa.estatus === "activa" &&
+              typeof etapa.porcentaje === "number"
+                ? ` · ${Math.round(etapa.porcentaje)}%`
+                : ""}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function EtapasCobertura({
   coberturas,
@@ -48,7 +126,7 @@ export function EtapasCobertura({
         {coberturas.map((cobertura, idx) => (
           <div
             key={idx}
-            className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4"
+            className="flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-4"
           >
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="flex min-w-0 items-start gap-2">
@@ -57,35 +135,15 @@ export function EtapasCobertura({
                   {cobertura.nombre ?? "Cobertura"}
                 </p>
               </div>
-              {cobertura.etapa_actual ? (
-                <span className="bg-brand-navy/5 text-brand-navy max-w-full rounded-full px-3 py-1 text-xs font-medium">
-                  {cobertura.etapa_actual}
+              {typeof cobertura.avance === "number" ? (
+                <span className="text-brand-navy text-sm font-bold">
+                  {Math.round(cobertura.avance)}%
                 </span>
               ) : null}
             </div>
 
-            {/* Barra segmentada: un segmento por etapa */}
-            <div className="flex gap-1.5">
-              {cobertura.etapas.map((etapa, etapaIdx) => (
-                <div
-                  key={etapaIdx}
-                  className={`h-2.5 flex-1 rounded-full ${COLOR_SEGMENTO[etapa.estatus] ?? COLOR_SEGMENTO.pendiente}`}
-                />
-              ))}
-            </div>
-
-            <div className="flex gap-1.5">
-              {cobertura.etapas.map((etapa, etapaIdx) => (
-                <div key={etapaIdx} className="flex flex-1 flex-col gap-0.5">
-                  <p className="text-[11px] leading-tight font-medium text-neutral-700">
-                    {etapa.nombre ?? `Etapa ${etapaIdx + 1}`}
-                  </p>
-                  <p className="text-[11px] leading-tight text-neutral-500">
-                    {LABEL_ESTATUS[etapa.estatus] ?? "Pendiente"}
-                  </p>
-                </div>
-              ))}
-            </div>
+            {/* Etapas del proceso como pasos (no como barra, para no confundir con el avance) */}
+            <Stepper etapas={cobertura.etapas} />
 
             {/* Última actividad en curso (cobertura en proceso) */}
             {cobertura.ultima_actividad ? (

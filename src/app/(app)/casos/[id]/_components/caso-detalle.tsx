@@ -117,6 +117,27 @@ export function CasoDetalleVista({
         </div>
       </div>
 
+      {caso.coberturas && caso.coberturas.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-brand-navy text-sm font-semibold">
+              Avance del caso
+            </span>
+            <span className="text-brand-navy text-sm font-bold">
+              {Math.round(caso.avance_general ?? 0)}%
+            </span>
+          </div>
+          <div className="h-2.5 w-full overflow-hidden rounded-full bg-neutral-200">
+            <div
+              className="bg-brand-yellow h-full rounded-full transition-all"
+              style={{
+                width: `${Math.min(100, Math.max(0, caso.avance_general ?? 0))}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       <dl className="grid grid-cols-1 gap-x-8 gap-y-3 border-y border-neutral-200 py-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <Dato label="Tipo de persona">
           {caso.tipo_persona === "fisica" ? "Persona física" : "Persona moral"}
