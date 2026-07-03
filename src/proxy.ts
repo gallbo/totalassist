@@ -8,7 +8,6 @@ const publicRoutes = [
   "/restablecer",
 ];
 const sharedRoutes = [
-  "/ayuda",
   "/condiciones",
   "/privacidad",
   "/terminos",

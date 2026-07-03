@@ -2,9 +2,8 @@ import Link from "next/link";
 import { Logo } from "@/components/layout/logo";
 
 const links = [
-  { label: "Ayuda y comentarios", href: "/ayuda" },
   { label: "Condiciones de uso", href: "/condiciones" },
-  { label: "Privacidad y cookies", href: "/privacidad" },
+  { label: "Aviso de privacidad", href: "/privacidad" },
 ];
 
 export function Footer() {
