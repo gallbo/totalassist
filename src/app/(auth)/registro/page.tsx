@@ -34,6 +34,7 @@ export default function RegistroPage() {
   const [terminosAceptados, setTerminosAceptados] = useState(false);
   const [privacidadOpen, setPrivacidadOpen] = useState(false);
   const [privacidadAceptada, setPrivacidadAceptada] = useState(false);
+  const [secuenciaInicial, setSecuenciaInicial] = useState(true);
 
   const {
     register,
@@ -98,16 +99,21 @@ export default function RegistroPage() {
     void confirmarRegistro(values);
   };
 
-  // Al aceptar los terminos se cierra su popup y se abre el del aviso.
+  // En la secuencia inicial (al abrir la vista) aceptar los terminos encadena
+  // el aviso. Si el usuario reabre los terminos desde su casilla, solo se
+  // reabre ese popup, no el del aviso.
   const aceptarTerminos = () => {
     setTerminosAceptados(true);
     setTerminosOpen(false);
-    setPrivacidadOpen(true);
+    if (secuenciaInicial) {
+      setPrivacidadOpen(true);
+    }
   };
 
   const aceptarPrivacidad = () => {
     setPrivacidadAceptada(true);
     setPrivacidadOpen(false);
+    setSecuenciaInicial(false);
   };
 
   return (
@@ -218,68 +224,70 @@ export default function RegistroPage() {
           </Field>
         </div>
 
-        <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-neutral-100 p-4 text-xs leading-relaxed text-neutral-600">
-          <input
-            type="checkbox"
-            checked={terminosAceptados}
-            onChange={() => {
-              if (terminosAceptados) {
-                setTerminosAceptados(false);
-              } else {
-                setTerminosOpen(true);
-              }
-            }}
-            className="accent-brand-navy mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
-          />
-          <span>
-            He leído y acepto los{" "}
-            <a
-              href="/terminos"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand-navy font-semibold hover:underline"
-            >
-              Términos y Condiciones
-            </a>
-            .
-          </span>
-        </label>
+        <div className="flex flex-col gap-2">
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-neutral-100 p-4 text-xs leading-relaxed text-neutral-600">
+            <input
+              type="checkbox"
+              checked={terminosAceptados}
+              onChange={() => {
+                if (terminosAceptados) {
+                  setTerminosAceptados(false);
+                } else {
+                  setTerminosOpen(true);
+                }
+              }}
+              className="accent-brand-navy mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
+            />
+            <span>
+              He leído y acepto los{" "}
+              <a
+                href="/terminos"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand-navy font-semibold hover:underline"
+              >
+                Términos y Condiciones
+              </a>
+              .
+            </span>
+          </label>
 
-        <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-neutral-100 p-4 text-xs leading-relaxed text-neutral-600">
-          <input
-            type="checkbox"
-            checked={privacidadAceptada}
-            onChange={() => {
-              if (privacidadAceptada) {
-                setPrivacidadAceptada(false);
-              } else {
-                setPrivacidadOpen(true);
-              }
-            }}
-            className="accent-brand-navy mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
-          />
-          <span>
-            {PRIVACIDAD_CONSENTIMIENTO.pre}
-            <a
-              href={PRIVACIDAD_CONSENTIMIENTO.urlSite}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand-navy font-semibold hover:underline"
-            >
-              totalclaimassist.com/avisodeprivacidadagentes
-            </a>
-            {PRIVACIDAD_CONSENTIMIENTO.mid}
-            <a
-              href="/privacidad"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand-navy font-semibold hover:underline"
-            >
-              totalclaimassist.app/privacidad
-            </a>
-            {PRIVACIDAD_CONSENTIMIENTO.post}
-          </span>
-        </label>
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-neutral-100 p-4 text-xs leading-relaxed text-neutral-600">
+            <input
+              type="checkbox"
+              checked={privacidadAceptada}
+              onChange={() => {
+                if (privacidadAceptada) {
+                  setPrivacidadAceptada(false);
+                } else {
+                  setPrivacidadOpen(true);
+                }
+              }}
+              className="accent-brand-navy mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
+            />
+            <span>
+              {PRIVACIDAD_CONSENTIMIENTO.pre}
+              <a
+                href={PRIVACIDAD_CONSENTIMIENTO.urlSite}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand-navy font-semibold hover:underline"
+              >
+                totalclaimassist.com/avisodeprivacidadagentes
+              </a>
+              {PRIVACIDAD_CONSENTIMIENTO.mid}
+              <a
+                href="/privacidad"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand-navy font-semibold hover:underline"
+              >
+                totalclaimassist.app/privacidad
+              </a>
+              {PRIVACIDAD_CONSENTIMIENTO.post}
+            </span>
+          </label>
+        </div>
 
         <div className="flex justify-center">
           <BrandButton

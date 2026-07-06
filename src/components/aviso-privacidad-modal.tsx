@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   PRIVACIDAD_SIMPLIFICADO,
-  PRIVACIDAD_SIMPLIFICADO_CHECKBOX,
   PRIVACIDAD_SIMPLIFICADO_TITULO,
   PRIVACIDAD_SUBTITULO,
   PRIVACIDAD_VERSION,
 } from "@/lib/privacidad";
 
 // Popup del aviso de privacidad simplificado que salta al abrir el registro.
-// No se puede cerrar hasta marcar la casilla (no hay backdrop, Escape ni X).
+// No se puede cerrar salvo con el boton Aceptar (no hay backdrop, Escape ni X).
 export function AvisoPrivacidadModal({
   open,
   onAccept,
@@ -20,8 +19,6 @@ export function AvisoPrivacidadModal({
   onAccept: () => void;
   integralHref: string;
 }) {
-  const [leido, setLeido] = useState(false);
-
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = "hidden";
@@ -89,27 +86,14 @@ export function AvisoPrivacidadModal({
           </p>
         </div>
 
-        <div className="space-y-4 border-t border-neutral-200 p-5">
-          <label className="flex cursor-pointer items-start gap-3 text-sm text-neutral-700">
-            <input
-              type="checkbox"
-              checked={leido}
-              onChange={(e) => setLeido(e.target.checked)}
-              className="accent-brand-navy mt-0.5 h-5 w-5 shrink-0 cursor-pointer"
-            />
-            <span>{PRIVACIDAD_SIMPLIFICADO_CHECKBOX}</span>
-          </label>
-
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={onAccept}
-              disabled={!leido}
-              className="bg-brand-yellow hover:bg-brand-yellow-hover text-brand-navy rounded-pill px-8 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Aceptar
-            </button>
-          </div>
+        <div className="flex justify-end border-t border-neutral-200 p-5">
+          <button
+            type="button"
+            onClick={onAccept}
+            className="bg-brand-yellow hover:bg-brand-yellow-hover text-brand-navy rounded-pill px-8 py-2.5 text-sm font-semibold transition-colors"
+          >
+            Aceptar
+          </button>
         </div>
       </div>
     </div>
