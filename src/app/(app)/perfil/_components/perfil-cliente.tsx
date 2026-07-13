@@ -661,7 +661,7 @@ export function PerfilCliente({ initial, feedback }: Props) {
         <div className="flex justify-center pt-4">
           <BrandButton
             type="submit"
-            className="px-10"
+            className="w-full px-10 sm:w-auto"
             disabled={submittingPerfil}
           >
             {submittingPerfil ? "Guardando..." : "Guardar cambios"}
@@ -720,7 +720,7 @@ export function PerfilCliente({ initial, feedback }: Props) {
         <div className="flex justify-end">
           <BrandButton
             type="submit"
-            className="px-8"
+            className="w-full px-8 sm:w-auto"
             disabled={submittingPassword}
           >
             {submittingPassword ? "Guardando..." : "Cambiar contraseña"}

@@ -175,8 +175,9 @@ export function PromotoriasTable({
       <div>
         <BrandButton
           type="button"
+          tone="secondary"
           onClick={addOrUpdate}
-          className="h-11 px-6"
+          className="h-11 w-full px-6 sm:w-auto"
           disabled={disabled}
         >
           <Plus className="mr-1 h-4 w-4" />
