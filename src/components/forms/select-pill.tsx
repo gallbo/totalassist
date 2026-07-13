@@ -63,7 +63,7 @@ export function SelectPill({
   const mostrarBusqueda = buscable && options.length > 6;
 
   return (
-    <div className="relative" ref={rootRef}>
+    <div className="relative w-full sm:w-auto" ref={rootRef}>
       <button
         type="button"
         ref={botonRef}
@@ -72,7 +72,7 @@ export function SelectPill({
           if (open) setFiltro("");
         }}
         className={cn(
-          "bg-brand-yellow text-brand-navy hover:bg-brand-yellow-hover inline-flex h-10 items-center gap-2 rounded-full px-5 text-sm font-semibold",
+          "bg-brand-yellow text-brand-navy hover:bg-brand-yellow-hover inline-flex h-10 w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold sm:w-auto",
           invalid && "ring-2 ring-red-500",
         )}
       >
@@ -81,7 +81,7 @@ export function SelectPill({
         </span>
       </button>
       {open && (
-        <div className="absolute top-full right-0 z-20 mt-2 flex max-h-80 min-w-[260px] flex-col rounded-xl bg-blue-50 shadow-lg ring-1 ring-neutral-200">
+        <div className="absolute top-full right-0 left-0 z-20 mt-2 flex max-h-80 flex-col rounded-xl bg-blue-50 shadow-lg ring-1 ring-neutral-200 sm:left-auto sm:min-w-[260px]">
           {mostrarBusqueda && (
             <div className="border-b border-blue-100 p-2">
               <input

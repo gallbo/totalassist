@@ -330,12 +330,12 @@ export function NuevoCasoCliente({
         forzarAbierto={intentoEnviar && errorSeguro}
         conError={errorSeguro}
       >
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Controller
             control={control}
             name="tipo_seguro_id"
             render={({ field, fieldState }) => (
-              <div className="flex flex-col gap-1">
+              <div className="flex w-full flex-col gap-1 sm:w-auto">
                 <SelectPill
                   label="Tipo de seguro"
                   options={tiposSeguro.map((t) => ({
@@ -358,7 +358,7 @@ export function NuevoCasoCliente({
             control={control}
             name="aseguradora_id"
             render={({ field, fieldState }) => (
-              <div className="flex flex-col gap-1">
+              <div className="flex w-full flex-col gap-1 sm:w-auto">
                 <SelectPill
                   label="Aseguradora"
                   options={aseguradoras.map((a) => ({
@@ -516,7 +516,7 @@ export function NuevoCasoCliente({
               })
             }
             tone="secondary"
-            className="self-start"
+            className="w-full sm:w-auto sm:self-start"
           >
             <Plus className="mr-1 h-4 w-4" />
             Agregar beneficiario
@@ -564,19 +564,18 @@ export function NuevoCasoCliente({
         )}
       </AccordionSection>
 
-      <div className="flex flex-wrap justify-end gap-3 border-t border-neutral-200 pt-6">
+      <div className="flex flex-col-reverse gap-3 border-t border-neutral-200 pt-6 sm:flex-row sm:flex-wrap sm:justify-end">
         <Button
           variant="outline"
           type="button"
-          className="bg-brand-navy hover:bg-brand-navy-hover h-11 rounded-full px-6 text-white hover:text-white"
+          className="border-brand-navy text-brand-navy hover:bg-brand-navy/5 hover:text-brand-navy h-11 w-full rounded-full bg-transparent px-6 sm:w-auto"
           render={<Link href="/casos" />}
         >
           Cancelar
         </Button>
         <BrandButton
           type="submit"
-          tone="secondary"
-          className="px-8"
+          className="w-full px-8 sm:w-auto"
           disabled={isPending || !paqueteActivo}
         >
           {isPending ? "Guardando…" : "Guardar"}

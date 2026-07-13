@@ -175,7 +175,7 @@ export function PolizasFields({
       <BrandButton
         type="button"
         tone="secondary"
-        className="self-start"
+        className="w-full sm:w-auto sm:self-start"
         onClick={onAppend}
       >
         <Plus className="mr-1 h-4 w-4" />

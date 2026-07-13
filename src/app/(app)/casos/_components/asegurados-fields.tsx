@@ -198,7 +198,7 @@ function BotonAgregar({
     <button
       type="button"
       onClick={onClick}
-      className="text-brand-navy hover:text-brand-yellow-hover flex items-center gap-1 self-start text-sm font-semibold"
+      className="text-brand-navy hover:text-brand-navy-hover flex min-h-11 items-center gap-1 self-start text-sm font-semibold"
     >
       <Plus className="h-4 w-4" /> {children}
     </button>
@@ -571,9 +571,10 @@ export function AseguradosFields({
           <BrandButton
             type="button"
             tone="secondary"
-            className="self-start"
+            className="w-full sm:w-auto sm:self-start"
             onClick={() => fa.append(aseguradoFisicaVacio())}
           >
+            <Plus className="mr-1 h-4 w-4" />
             Agregar asegurado
           </BrandButton>
         </div>
