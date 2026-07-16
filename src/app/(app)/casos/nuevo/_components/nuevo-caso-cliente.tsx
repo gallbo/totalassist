@@ -44,6 +44,7 @@ import {
   subirArchivoCasoAction,
   subirArchivoPolizaAction,
 } from "../_actions";
+import { TutorialAltaCasoModal } from "./tutorial-alta-caso-modal";
 
 const TAMANO_MAX = 10 * 1024 * 1024;
 
@@ -295,293 +296,298 @@ export function NuevoCasoCliente({
   const errorAsegurado = !!errors.asegurados;
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit, onInvalid)}
-      className="flex flex-col gap-5"
-    >
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <h1 className="text-brand-navy text-xl font-bold">Registro de caso</h1>
-        {paqueteActivo && (
-          <span className="text-sm text-neutral-600">
-            Paquete activo: {paqueteActivo.casos_restantes} de{" "}
-            {paqueteActivo.numero_casos} casos restantes
-          </span>
-        )}
-      </div>
-
-      <LeyendaRequerido className="border-y border-neutral-100 py-2.5" />
-
-      {!paqueteActivo && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          No tienes paquetes con cupo. Contrata uno en{" "}
-          <Link href="/paquetes" className="underline">
-            Paquetes
-          </Link>{" "}
-          antes de registrar un caso.
-        </div>
-      )}
-
-      {/* ── 1. Datos del seguro ── */}
-      <AccordionSection
-        titulo="Datos del seguro"
-        descripcion="Tipo de seguro, aseguradora y póliza"
-        obligatorio
-        abiertoInicial
-        forzarAbierto={intentoEnviar && errorSeguro}
-        conError={errorSeguro}
+    <>
+      <TutorialAltaCasoModal />
+      <form
+        onSubmit={handleSubmit(onSubmit, onInvalid)}
+        className="flex flex-col gap-5"
       >
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <Controller
-            control={control}
-            name="tipo_seguro_id"
-            render={({ field, fieldState }) => (
-              <div className="flex w-full flex-col gap-1 sm:w-auto">
-                <SelectPill
-                  label="Tipo de seguro"
-                  options={tiposSeguro.map((t) => ({
-                    value: String(t.id),
-                    label: t.nombre,
-                  }))}
-                  value={field.value ? String(field.value) : ""}
-                  onChange={(v) => onCambioTipoSeguro(v ? Number(v) : null)}
-                  invalid={!!fieldState.error}
-                />
-                {fieldState.error && (
-                  <span className="text-xs text-red-600">
-                    {fieldState.error.message}
-                  </span>
-                )}
-              </div>
-            )}
-          />
-          <Controller
-            control={control}
-            name="aseguradora_id"
-            render={({ field, fieldState }) => (
-              <div className="flex w-full flex-col gap-1 sm:w-auto">
-                <SelectPill
-                  label="Aseguradora"
-                  options={aseguradoras.map((a) => ({
-                    value: String(a.id),
-                    label: a.nombre,
-                  }))}
-                  value={field.value ? String(field.value) : ""}
-                  onChange={(v) => field.onChange(v ? Number(v) : null)}
-                  invalid={!!fieldState.error}
-                />
-                {fieldState.error && (
-                  <span className="text-xs text-red-600">
-                    {fieldState.error.message}
-                  </span>
-                )}
-              </div>
-            )}
-          />
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <h1 className="text-brand-navy text-xl font-bold">
+            Registro de caso
+          </h1>
+          {paqueteActivo && (
+            <span className="text-sm text-neutral-600">
+              Paquete activo: {paqueteActivo.casos_restantes} de{" "}
+              {paqueteActivo.numero_casos} casos restantes
+            </span>
+          )}
         </div>
-        <div className="border-t border-neutral-100 pt-4">
-          <p className="mb-3 text-xs text-neutral-500">
-            Un caso es de un solo tipo de seguro, pero puede tener varias
-            pólizas del mismo siniestro. Agrega todas las que apliquen.
-          </p>
-          <PolizasFields
+
+        <LeyendaRequerido className="border-y border-neutral-100 py-2.5" />
+
+        {!paqueteActivo && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            No tienes paquetes con cupo. Contrata uno en{" "}
+            <Link href="/paquetes" className="underline">
+              Paquetes
+            </Link>{" "}
+            antes de registrar un caso.
+          </div>
+        )}
+
+        {/* ── 1. Datos del seguro ── */}
+        <AccordionSection
+          titulo="Datos del seguro"
+          descripcion="Tipo de seguro, aseguradora y póliza"
+          obligatorio
+          abiertoInicial
+          forzarAbierto={intentoEnviar && errorSeguro}
+          conError={errorSeguro}
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Controller
+              control={control}
+              name="tipo_seguro_id"
+              render={({ field, fieldState }) => (
+                <div className="flex w-full flex-col gap-1 sm:w-auto">
+                  <SelectPill
+                    label="Tipo de seguro"
+                    options={tiposSeguro.map((t) => ({
+                      value: String(t.id),
+                      label: t.nombre,
+                    }))}
+                    value={field.value ? String(field.value) : ""}
+                    onChange={(v) => onCambioTipoSeguro(v ? Number(v) : null)}
+                    invalid={!!fieldState.error}
+                  />
+                  {fieldState.error && (
+                    <span className="text-xs text-red-600">
+                      {fieldState.error.message}
+                    </span>
+                  )}
+                </div>
+              )}
+            />
+            <Controller
+              control={control}
+              name="aseguradora_id"
+              render={({ field, fieldState }) => (
+                <div className="flex w-full flex-col gap-1 sm:w-auto">
+                  <SelectPill
+                    label="Aseguradora"
+                    options={aseguradoras.map((a) => ({
+                      value: String(a.id),
+                      label: a.nombre,
+                    }))}
+                    value={field.value ? String(field.value) : ""}
+                    onChange={(v) => field.onChange(v ? Number(v) : null)}
+                    invalid={!!fieldState.error}
+                  />
+                  {fieldState.error && (
+                    <span className="text-xs text-red-600">
+                      {fieldState.error.message}
+                    </span>
+                  )}
+                </div>
+              )}
+            />
+          </div>
+          <div className="border-t border-neutral-100 pt-4">
+            <p className="mb-3 text-xs text-neutral-500">
+              Un caso es de un solo tipo de seguro, pero puede tener varias
+              pólizas del mismo siniestro. Agrega todas las que apliquen.
+            </p>
+            <PolizasFields
+              control={control}
+              register={register}
+              fields={polizas.fields}
+              onAppend={() => polizas.append(polizaVacia())}
+              onRemove={(i) => polizas.remove(i)}
+              files={polizaFiles}
+              onFileChange={(key, file) =>
+                setPolizaFiles((prev) => ({ ...prev, [key]: file }))
+              }
+            />
+          </div>
+        </AccordionSection>
+
+        {/* ── 2. Cuestionario del siniestro ── */}
+        <AccordionSection
+          titulo="Cuestionario del siniestro"
+          descripcion="Cuéntanos qué pasó"
+          obligatorio
+          abiertoInicial
+          forzarAbierto={intentoEnviar && errorCuestionario}
+          conError={intentoEnviar && errorCuestionario}
+        >
+          {!tipoSeguroId ? (
+            <p className="text-sm text-neutral-500">
+              Selecciona primero el tipo de seguro (en &quot;Datos del
+              seguro&quot;) para ver el cuestionario.
+            </p>
+          ) : (
+            <CuestionarioSecciones
+              preguntas={preguntas}
+              tipoSeguroNombre={tipoSeguroNombre}
+              respuestas={respuestas}
+              onRespuesta={onRespuesta}
+              errores={erroresCuestionario}
+              disabled={isPending}
+              camposCaso={
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <Field
+                    label="Fecha del siniestro *"
+                    error={errors.fecha_siniestro?.message}
+                  >
+                    <Input type="date" {...register("fecha_siniestro")} />
+                  </Field>
+                  <Field
+                    label={
+                      yaSeReporto === "Sí"
+                        ? "Número de siniestro *"
+                        : "Número de siniestro"
+                    }
+                    error={errors.num_siniestro_poliza?.message}
+                  >
+                    <Input
+                      placeholder={
+                        yaSeReporto === "No"
+                          ? "Aún no se reporta a la aseguradora"
+                          : ""
+                      }
+                      disabled={yaSeReporto === "No"}
+                      {...register("num_siniestro_poliza")}
+                    />
+                  </Field>
+                </div>
+              }
+            />
+          )}
+        </AccordionSection>
+
+        {/* ── 3. Asegurados ── */}
+        <AccordionSection
+          titulo="Asegurados"
+          descripcion="A nombre de quién está la póliza, con sus direcciones y contactos"
+          obligatorio
+          abiertoInicial
+          forzarAbierto={intentoEnviar && errorAsegurado}
+          conError={errorAsegurado}
+        >
+          <AseguradosFields
             control={control}
             register={register}
-            fields={polizas.fields}
-            onAppend={() => polizas.append(polizaVacia())}
-            onRemove={(i) => polizas.remove(i)}
-            files={polizaFiles}
-            onFileChange={(key, file) =>
-              setPolizaFiles((prev) => ({ ...prev, [key]: file }))
-            }
+            estados={estados}
+            esAuto={esAuto}
           />
-        </div>
-      </AccordionSection>
+        </AccordionSection>
 
-      {/* ── 2. Cuestionario del siniestro ── */}
-      <AccordionSection
-        titulo="Cuestionario del siniestro"
-        descripcion="Cuéntanos qué pasó"
-        obligatorio
-        abiertoInicial
-        forzarAbierto={intentoEnviar && errorCuestionario}
-        conError={intentoEnviar && errorCuestionario}
-      >
-        {!tipoSeguroId ? (
-          <p className="text-sm text-neutral-500">
-            Selecciona primero el tipo de seguro (en &quot;Datos del
-            seguro&quot;) para ver el cuestionario.
-          </p>
-        ) : (
-          <CuestionarioSecciones
-            preguntas={preguntas}
-            tipoSeguroNombre={tipoSeguroNombre}
-            respuestas={respuestas}
-            onRespuesta={onRespuesta}
-            errores={erroresCuestionario}
-            disabled={isPending}
-            camposCaso={
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <Field
-                  label="Fecha del siniestro *"
-                  error={errors.fecha_siniestro?.message}
-                >
-                  <Input type="date" {...register("fecha_siniestro")} />
-                </Field>
-                <Field
-                  label={
-                    yaSeReporto === "Sí"
-                      ? "Número de siniestro *"
-                      : "Número de siniestro"
-                  }
-                  error={errors.num_siniestro_poliza?.message}
-                >
-                  <Input
-                    placeholder={
-                      yaSeReporto === "No"
-                        ? "Aún no se reporta a la aseguradora"
-                        : ""
-                    }
-                    disabled={yaSeReporto === "No"}
-                    {...register("num_siniestro_poliza")}
-                  />
-                </Field>
-              </div>
-            }
-          />
-        )}
-      </AccordionSection>
-
-      {/* ── 3. Asegurados ── */}
-      <AccordionSection
-        titulo="Asegurados"
-        descripcion="A nombre de quién está la póliza, con sus direcciones y contactos"
-        obligatorio
-        abiertoInicial
-        forzarAbierto={intentoEnviar && errorAsegurado}
-        conError={errorAsegurado}
-      >
-        <AseguradosFields
-          control={control}
-          register={register}
-          estados={estados}
-          esAuto={esAuto}
-        />
-      </AccordionSection>
-
-      {/* ── 6. Beneficiarios ── */}
-      <AccordionSection
-        titulo="Beneficiarios"
-        descripcion="Beneficiarios de la póliza"
-        obligatorio={false}
-      >
-        <div className="flex flex-col gap-3">
-          {beneficiarios.fields.map((f, i) => (
-            <div
-              key={f.id}
-              className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_120px_auto]"
-            >
-              <Input
-                placeholder="Nombre"
-                {...register(`beneficiarios.${i}.nombre`)}
-              />
-              <Input
-                placeholder="Parentesco"
-                {...register(`beneficiarios.${i}.parentesco`)}
-              />
-              <Input
-                placeholder="% participación"
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                {...register(`beneficiarios.${i}.porcentaje`)}
-              />
-              <button
-                type="button"
-                onClick={() => beneficiarios.remove(i)}
-                className="bg-brand-navy hover:bg-brand-navy-hover flex h-10 w-10 items-center justify-center self-end rounded-full text-white"
-                aria-label="Eliminar beneficiario"
+        {/* ── 6. Beneficiarios ── */}
+        <AccordionSection
+          titulo="Beneficiarios"
+          descripcion="Beneficiarios de la póliza"
+          obligatorio={false}
+        >
+          <div className="flex flex-col gap-3">
+            {beneficiarios.fields.map((f, i) => (
+              <div
+                key={f.id}
+                className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_120px_auto]"
               >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
-          <BrandButton
-            type="button"
-            onClick={() =>
-              beneficiarios.append({
-                nombre: "",
-                parentesco: "",
-                porcentaje: null,
-              })
-            }
-            tone="secondary"
-            className="w-full sm:w-auto sm:self-start"
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            Agregar beneficiario
-          </BrandButton>
-        </div>
-      </AccordionSection>
-
-      {/* ── 7. Documentos ── */}
-      <AccordionSection
-        titulo="Documentos"
-        descripcion="Archivos del caso"
-        obligatorio={false}
-      >
-        <label className="flex h-32 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 text-sm text-neutral-600 hover:bg-neutral-50">
-          <Upload className="mr-2 h-5 w-5" />
-          <span>Selecciona archivos (máx 10 MB c/u)</span>
-          <input
-            type="file"
-            multiple
-            className="sr-only"
-            onChange={onAgregarArchivo}
-          />
-        </label>
-        {archivos.length > 0 && (
-          <ul className="mt-3 flex flex-col gap-2">
-            {archivos.map((f, i) => (
-              <li
-                key={`${f.name}-${i}`}
-                className="flex items-center justify-between rounded-md bg-neutral-50 px-3 py-2 text-sm"
-              >
-                <span className="truncate">{f.name}</span>
+                <Input
+                  placeholder="Nombre"
+                  {...register(`beneficiarios.${i}.nombre`)}
+                />
+                <Input
+                  placeholder="Parentesco"
+                  {...register(`beneficiarios.${i}.parentesco`)}
+                />
+                <Input
+                  placeholder="% participación"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  {...register(`beneficiarios.${i}.porcentaje`)}
+                />
                 <button
                   type="button"
-                  onClick={() =>
-                    setArchivos((prev) => prev.filter((_, j) => j !== i))
-                  }
-                  className="text-neutral-500 hover:text-red-600"
-                  aria-label="Quitar archivo"
+                  onClick={() => beneficiarios.remove(i)}
+                  className="bg-brand-navy hover:bg-brand-navy-hover flex h-10 w-10 items-center justify-center self-end rounded-full text-white"
+                  aria-label="Eliminar beneficiario"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <X className="h-4 w-4" />
                 </button>
-              </li>
+              </div>
             ))}
-          </ul>
-        )}
-      </AccordionSection>
+            <BrandButton
+              type="button"
+              onClick={() =>
+                beneficiarios.append({
+                  nombre: "",
+                  parentesco: "",
+                  porcentaje: null,
+                })
+              }
+              tone="secondary"
+              className="w-full sm:w-auto sm:self-start"
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              Agregar beneficiario
+            </BrandButton>
+          </div>
+        </AccordionSection>
 
-      <div className="flex flex-col-reverse gap-3 border-t border-neutral-200 pt-6 sm:flex-row sm:flex-wrap sm:justify-end">
-        <Button
-          variant="outline"
-          type="button"
-          className="border-brand-navy text-brand-navy hover:bg-brand-navy/5 hover:text-brand-navy h-11 w-full rounded-full bg-transparent px-6 sm:w-auto"
-          render={<Link href="/casos" />}
+        {/* ── 7. Documentos ── */}
+        <AccordionSection
+          titulo="Documentos"
+          descripcion="Archivos del caso"
+          obligatorio={false}
         >
-          Cancelar
-        </Button>
-        <BrandButton
-          type="submit"
-          className="w-full px-8 sm:w-auto"
-          disabled={isPending || !paqueteActivo}
-        >
-          {isPending ? "Guardando…" : "Guardar"}
-        </BrandButton>
-      </div>
-    </form>
+          <label className="flex h-32 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 text-sm text-neutral-600 hover:bg-neutral-50">
+            <Upload className="mr-2 h-5 w-5" />
+            <span>Selecciona archivos (máx 10 MB c/u)</span>
+            <input
+              type="file"
+              multiple
+              className="sr-only"
+              onChange={onAgregarArchivo}
+            />
+          </label>
+          {archivos.length > 0 && (
+            <ul className="mt-3 flex flex-col gap-2">
+              {archivos.map((f, i) => (
+                <li
+                  key={`${f.name}-${i}`}
+                  className="flex items-center justify-between rounded-md bg-neutral-50 px-3 py-2 text-sm"
+                >
+                  <span className="truncate">{f.name}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setArchivos((prev) => prev.filter((_, j) => j !== i))
+                    }
+                    className="text-neutral-500 hover:text-red-600"
+                    aria-label="Quitar archivo"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </AccordionSection>
+
+        <div className="flex flex-col-reverse gap-3 border-t border-neutral-200 pt-6 sm:flex-row sm:flex-wrap sm:justify-end">
+          <Button
+            variant="outline"
+            type="button"
+            className="border-brand-navy text-brand-navy hover:bg-brand-navy/5 hover:text-brand-navy h-11 w-full rounded-full bg-transparent px-6 sm:w-auto"
+            render={<Link href="/casos" />}
+          >
+            Cancelar
+          </Button>
+          <BrandButton
+            type="submit"
+            className="w-full px-8 sm:w-auto"
+            disabled={isPending || !paqueteActivo}
+          >
+            {isPending ? "Guardando…" : "Guardar"}
+          </BrandButton>
+        </div>
+      </form>
+    </>
   );
 }
 
