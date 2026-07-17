@@ -11,6 +11,14 @@ export type RegistrarBrokerInput = {
   password: string;
   cedula: string;
   telefono?: string;
+  acepta_terminos: boolean;
+  terminos_version: string;
+  acepta_privacidad: boolean;
+  privacidad_version: string;
+};
+
+export type BrokerConfig = {
+  registro_casos_habilitado: boolean;
 };
 
 export type RegistrarBrokerResponse = {
@@ -122,6 +130,8 @@ export type PaqueteCatalogo = {
   numero_casos: number;
   precio: string;
   vigencia_dias: number;
+  fecha_fin: string | null;
+  mensual: boolean;
 };
 
 export type PaqueteContratado = {
@@ -143,6 +153,74 @@ export type CasoContactoAtencion = {
   nombre: string;
   telefono?: string | null;
   email?: string | null;
+  relacion_asegurado?: string | null;
+};
+
+export type CasoPoliza = {
+  id: number;
+  numero_poliza: string | null;
+  moneda: string | null;
+  fecha_expedicion: string | null;
+  vigencia_inicio: string | null;
+  vigencia_fin: string | null;
+  archivo_nombre: string | null;
+  tiene_archivo: boolean;
+  archivo_url: string | null;
+};
+
+// Póliza tal como viaja en el alta/edición del caso. `id` solo en edición:
+// identifica una póliza existente para conservarla (y su archivo).
+export type PolizaInput = {
+  id?: number;
+  numero_poliza: string;
+  moneda?: string | null;
+  fecha_expedicion?: string | null;
+  vigencia_inicio?: string | null;
+  vigencia_fin?: string | null;
+};
+
+// Estructura de asegurados del caso. No-AUTO / AUTO física: N asegurados física,
+// cada uno con direcciones y contactos. AUTO moral: un asegurado moral con N
+// representantes, cada representante con sus direcciones y contactos.
+export type CasoDireccion = {
+  id?: number;
+  domicilio?: string | null;
+  estado_id?: number | null;
+  ciudad?: string | null;
+  codigo_postal?: string | null;
+};
+
+export type CasoContactoAsegurado = {
+  id?: number;
+  nombre?: string | null;
+  telefono?: string | null;
+  email?: string | null;
+  relacion_asegurado?: string | null;
+};
+
+export type CasoRepresentante = {
+  id?: number;
+  nombre?: string | null;
+  cargo?: string | null;
+  rfc?: string | null;
+  correo?: string | null;
+  telefono?: string | null;
+  direcciones?: CasoDireccion[];
+  contactos_atencion?: CasoContactoAsegurado[];
+};
+
+export type CasoAsegurado = {
+  id?: number;
+  tipo_persona: "fisica" | "moral";
+  nombre?: string | null;
+  razon_social?: string | null;
+  nombre_comercial?: string | null;
+  rfc?: string | null;
+  correo?: string | null;
+  telefono?: string | null;
+  direcciones?: CasoDireccion[];
+  contactos_atencion?: CasoContactoAsegurado[];
+  representantes?: CasoRepresentante[];
 };
 
 export type CasoBeneficiario = {
@@ -155,6 +233,7 @@ export type CasoBeneficiario = {
 export type CasoArchivo = {
   id: number;
   nombre_original: string;
+  descripcion: string | null;
   mime_type: string | null;
   tamano: number | null;
   url: string | null;
@@ -180,6 +259,7 @@ export type CasoResumen = {
 export type EtapaCobertura = {
   nombre: string | null;
   estatus: "pendiente" | "activa" | "finalizada";
+  porcentaje?: number;
 };
 
 export type ResultadoCobertura = {
@@ -193,6 +273,7 @@ export type CoberturaCaso = {
   nombre: string | null;
   etapa_actual: string | null;
   ultima_actividad: string | null;
+  avance?: number;
   resultado: ResultadoCobertura | null;
   etapas: EtapaCobertura[];
 };
@@ -211,10 +292,15 @@ export type CasoDetalle = CasoResumen & {
   estado: string | null;
   ciudad: string | null;
   domicilio: string | null;
+  polizas: CasoPoliza[];
+  // Legacy: la primera póliza del caso. Usar `polizas`.
+  poliza: CasoPoliza | null;
+  asegurados: CasoAsegurado[];
   contactos_atencion: CasoContactoAtencion[];
   beneficiarios: CasoBeneficiario[];
   archivos: CasoArchivo[];
   coberturas: CoberturaCaso[];
+  avance_general?: number;
   paquete: { id: number; descripcion: string | null } | null;
 };
 
@@ -227,7 +313,9 @@ export type ListaCasos = {
 };
 
 export type RegistrarCasoInput = {
-  tipo_persona: "fisica" | "moral";
+  // Campos planos legacy: el portal ahora manda `asegurados`; se conservan
+  // opcionales por compatibilidad de tipos.
+  tipo_persona?: "fisica" | "moral";
   nombre_asegurado?: string | null;
   nombre_empresa?: string | null;
   nombre_comercial?: string | null;
@@ -240,13 +328,21 @@ export type RegistrarCasoInput = {
   tipo_seguro_id?: number | null;
   tipo_siniestro_id?: number | null;
   num_siniestro_poliza?: string | null;
-  folio_poliza?: string | null;
   fecha_siniestro?: string | null;
-  monto_estimado?: number | null;
+  // Pólizas del caso (tabla CasoPoliza en Skipper, 1:N). Un caso es de un solo
+  // tipo de seguro pero puede tener varias pólizas del mismo siniestro. Los
+  // campos planos de abajo quedan como legacy de una sola póliza.
+  polizas?: PolizaInput[];
+  numero_poliza?: string | null;
+  moneda?: string | null;
+  fecha_expedicion?: string | null;
+  vigencia_inicio?: string | null;
+  vigencia_fin?: string | null;
   estado_id?: number | null;
   ciudad?: string | null;
   domicilio?: string | null;
   codigo_postal?: string | null;
+  asegurados?: CasoAsegurado[];
   contactos_atencion?: CasoContactoAtencion[];
   beneficiarios?: CasoBeneficiario[];
   // Respuestas del cuestionario del siniestro { pregunta_id: respuesta }.
@@ -288,6 +384,8 @@ export type RegistrarCasoResponse = {
   broker_paquete_id: number;
   estatus: number;
   created_at: string | null;
+  // Pólizas creadas (id + número) para subir el archivo de cada una.
+  polizas: { id: number; numero_poliza: string | null }[];
   paquete: { id: number; casos_restantes: number };
 };
 
@@ -533,6 +631,13 @@ export const brokerApi = {
     );
   },
 
+  getConfig(token: string) {
+    return request<BrokerConfig>(
+      { method: "GET", url: "/api/brokers/config" },
+      token,
+    );
+  },
+
   getPaquetes(token: string) {
     return request<PaqueteContratado[]>(
       { method: "GET", url: "/api/brokers/paquetes" },
@@ -617,6 +722,7 @@ export const brokerApi = {
     token: string,
     casoId: number,
     archivo: File,
+    descripcion?: string | null,
   ): Promise<CasoArchivo> {
     // Usamos fetch directamente en lugar de axios porque axios v1 en Node 18+
     // no arma bien el body multipart cuando recibe la FormData global del runtime
@@ -624,6 +730,9 @@ export const brokerApi = {
     // respondía 422 archivo_requerido.
     const form = new FormData();
     form.append("archivo", archivo);
+    if (descripcion && descripcion.trim()) {
+      form.append("descripcion", descripcion.trim());
+    }
 
     const res = await fetch(`${baseURL}/api/brokers/casos/${casoId}/archivos`, {
       method: "POST",
@@ -651,6 +760,50 @@ export const brokerApi = {
     }
 
     return (await res.json()) as CasoArchivo;
+  },
+
+  async subirArchivoPoliza(
+    token: string,
+    casoId: number,
+    polizaId: number,
+    archivo: File,
+  ): Promise<{ archivo_nombre: string | null; tiene_archivo: boolean }> {
+    // Mismo motivo que subirArchivoCaso: fetch nativo para el multipart.
+    const form = new FormData();
+    form.append("archivo", archivo);
+
+    const res = await fetch(
+      `${baseURL}/api/brokers/casos/${casoId}/polizas/${polizaId}/archivo`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+        body: form,
+      },
+    );
+
+    if (!res.ok) {
+      let payload: ApiErrorPayload | undefined;
+      try {
+        payload = (await res.json()) as ApiErrorPayload;
+      } catch {
+        // Respuesta sin JSON; usamos el status para mapear el mensaje.
+      }
+      throw new ApiError(
+        payload?.mensaje ??
+          "No pudimos subir el archivo de la póliza. Intenta de nuevo.",
+        res.status,
+        payload?.error,
+        payload?.detalles ?? payload?.errors,
+      );
+    }
+
+    return (await res.json()) as {
+      archivo_nombre: string | null;
+      tiene_archivo: boolean;
+    };
   },
 
   getNuevoCasoBootstrap(token: string) {

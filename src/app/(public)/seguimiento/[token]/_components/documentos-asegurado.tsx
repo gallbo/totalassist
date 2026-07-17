@@ -65,7 +65,7 @@ export function DocumentosAsegurado({
   );
 
   return (
-    <section className="flex flex-col gap-4 border-t border-neutral-200 pt-6">
+    <section className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h2 className="text-brand-navy text-base font-bold">Tus documentos</h2>
         <p className="text-sm text-neutral-600">

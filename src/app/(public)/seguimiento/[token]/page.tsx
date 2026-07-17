@@ -5,11 +5,9 @@ import {
   getDocumentosOrEmpty,
   type DocumentosResponse,
 } from "@/lib/api/publico";
-import { DocumentosAsegurado } from "./_components/documentos-asegurado";
 import { EnlaceExpirado } from "./_components/enlace-expirado";
-import { Evaluacion } from "./_components/evaluacion";
-import { SeguimientoCliente } from "./_components/seguimiento-cliente";
 import { SeguimientoHeader } from "./_components/seguimiento-header";
+import { SeguimientoTabs } from "./_components/seguimiento-tabs";
 
 const ESTATUS_CERRADOS = new Set([1, 3]);
 
@@ -62,15 +60,13 @@ export default async function SeguimientoPage({ params }: Props) {
     <>
       <SeguimientoHeader broker={payload.broker} />
       <PageCard>
-        <SeguimientoCliente caso={payload.caso} />
-        <div className="mt-6">
-          <DocumentosAsegurado token={token} documentos={documentos} />
-        </div>
-        {muestraEvaluacion ? (
-          <div className="mt-6">
-            <Evaluacion token={token} evaluacionInicial={payload.evaluacion} />
-          </div>
-        ) : null}
+        <SeguimientoTabs
+          caso={payload.caso}
+          token={token}
+          documentos={documentos}
+          evaluacion={payload.evaluacion}
+          muestraEvaluacion={muestraEvaluacion}
+        />
       </PageCard>
     </>
   );

@@ -10,6 +10,7 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -319,9 +320,11 @@ export function PerfilCliente({ initial, feedback }: Props) {
       const result = await cambiarPasswordAction(values);
       if (result.ok) {
         toast.success(
-          "Contraseña actualizada. Te enviamos un correo confirmando el cambio.",
+          "Contraseña actualizada. Vuelve a iniciar sesión con tu nueva contraseña.",
         );
         passwordForm.reset();
+        // El cambio invalida la sesión actual: cerramos y mandamos a login.
+        await signOut({ callbackUrl: "/login?password=cambiada" });
       } else if (result.code === "password_actual_incorrecta") {
         passwordForm.setError("password_actual", {
           type: "server",
@@ -658,7 +661,7 @@ export function PerfilCliente({ initial, feedback }: Props) {
         <div className="flex justify-center pt-4">
           <BrandButton
             type="submit"
-            className="px-10"
+            className="w-full px-10 sm:w-auto"
             disabled={submittingPerfil}
           >
             {submittingPerfil ? "Guardando..." : "Guardar cambios"}
@@ -717,7 +720,7 @@ export function PerfilCliente({ initial, feedback }: Props) {
         <div className="flex justify-end">
           <BrandButton
             type="submit"
-            className="px-8"
+            className="w-full px-8 sm:w-auto"
             disabled={submittingPassword}
           >
             {submittingPassword ? "Guardando..." : "Cambiar contraseña"}

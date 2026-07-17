@@ -53,8 +53,32 @@ export async function subirArchivoCasoAction(
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, message: "Selecciona un archivo válido." };
   }
+  const descripcion = formData.get("descripcion");
   const result = await withToken((t) =>
-    brokerApi.subirArchivoCaso(t, casoId, file),
+    brokerApi.subirArchivoCaso(
+      t,
+      casoId,
+      file,
+      typeof descripcion === "string" ? descripcion : null,
+    ),
+  );
+  if (result.ok) revalidatePath(`/casos/${casoId}`);
+  return result;
+}
+
+export async function subirArchivoPolizaAction(
+  casoId: number,
+  polizaId: number,
+  formData: FormData,
+): Promise<
+  ActionResult<{ archivo_nombre: string | null; tiene_archivo: boolean }>
+> {
+  const file = formData.get("archivo");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, message: "Selecciona un archivo válido." };
+  }
+  const result = await withToken((t) =>
+    brokerApi.subirArchivoPoliza(t, casoId, polizaId, file),
   );
   if (result.ok) revalidatePath(`/casos/${casoId}`);
   return result;

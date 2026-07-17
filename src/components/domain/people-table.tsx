@@ -92,8 +92,9 @@ export function PeopleTable({
         </label>
         <BrandButton
           type="button"
+          tone="secondary"
           onClick={addOrUpdate}
-          className="h-11"
+          className="h-11 w-full md:w-auto"
           disabled={disabled}
         >
           <Plus className="mr-1 h-4 w-4" />

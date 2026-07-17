@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { formatearFechaLarga } from "@/lib/fecha";
 import type {
   CasoArchivo,
+  CasoAsegurado,
   CasoDetalle,
   CuestionarioPregunta,
 } from "@/lib/api/brokers";
@@ -49,6 +50,7 @@ export function CasoDetalleVista({
   const [isPending, startTransition] = useTransition();
   const [borrandoId, setBorrandoId] = useState<number | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
+  const [descripcionArchivo, setDescripcionArchivo] = useState("");
 
   const onSubirArchivo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -60,11 +62,15 @@ export function CasoDetalleVista({
     }
     const fd = new FormData();
     fd.append("archivo", f);
+    if (descripcionArchivo.trim()) {
+      fd.append("descripcion", descripcionArchivo.trim());
+    }
     startTransition(async () => {
       const result = await subirArchivoCasoAction(caso.id, fd);
       setFileInputKey((k) => k + 1);
       if (result.ok) {
         toast.success("Archivo subido.");
+        setDescripcionArchivo("");
         router.refresh();
       } else {
         toast.error(result.message);
@@ -111,23 +117,38 @@ export function CasoDetalleVista({
         </div>
       </div>
 
+      {caso.coberturas && caso.coberturas.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-brand-navy text-sm font-semibold">
+              Avance del caso
+            </span>
+            <span className="text-brand-navy text-sm font-bold">
+              {Math.round(caso.avance_general ?? 0)}%
+            </span>
+          </div>
+          <div className="h-2.5 w-full overflow-hidden rounded-full bg-neutral-200">
+            <div
+              className="bg-brand-yellow h-full rounded-full transition-all"
+              style={{
+                width: `${Math.min(100, Math.max(0, caso.avance_general ?? 0))}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       <dl className="grid grid-cols-1 gap-x-8 gap-y-3 border-y border-neutral-200 py-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <Dato label="Tipo de persona">
           {caso.tipo_persona === "fisica" ? "Persona física" : "Persona moral"}
         </Dato>
         <Dato label="Aseguradora">{caso.aseguradora ?? "—"}</Dato>
         <Dato label="Tipo de seguro">{caso.tipo_seguro ?? "—"}</Dato>
-        <Dato label="Folio de la póliza">{caso.folio_poliza ?? "—"}</Dato>
         <Dato label="Fecha del siniestro">
           {formatearFechaLarga(caso.fecha_siniestro)}
         </Dato>
         <Dato label="Número de siniestro">
           {caso.num_siniestro_poliza ?? "Aún no se reporta"}
-        </Dato>
-        <Dato label="Monto estimado">
-          {caso.monto_estimado != null
-            ? `$${Number(caso.monto_estimado).toLocaleString("es-MX")}`
-            : "—"}
         </Dato>
         <Dato label="Estado">{caso.estado ?? "—"}</Dato>
         <Dato label="Paquete">{caso.paquete?.descripcion ?? "—"}</Dato>
@@ -135,6 +156,49 @@ export function CasoDetalleVista({
           {formatearFechaLarga(caso.created_at)}
         </Dato>
       </dl>
+
+      {caso.polizas.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-brand-navy text-sm font-semibold">
+            {caso.polizas.length === 1
+              ? "Póliza"
+              : `Pólizas (${caso.polizas.length})`}
+          </h2>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {caso.polizas.map((p) => (
+              <div
+                key={p.id}
+                className="rounded-xl border border-neutral-200 p-4"
+              >
+                <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                  <Dato label="Número de póliza">{p.numero_poliza ?? "—"}</Dato>
+                  <Dato label="Moneda">{p.moneda ?? "—"}</Dato>
+                  <Dato label="Vigencia">
+                    {p.vigencia_inicio || p.vigencia_fin
+                      ? `${formatearFechaLarga(p.vigencia_inicio)} – ${formatearFechaLarga(p.vigencia_fin)}`
+                      : "—"}
+                  </Dato>
+                  <Dato label="Archivo">
+                    {p.archivo_url ? (
+                      <a
+                        href={p.archivo_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-brand-navy inline-flex items-center gap-1 hover:underline"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        {p.archivo_nombre ?? "Descargar"}
+                      </a>
+                    ) : (
+                      (p.archivo_nombre ?? "—")
+                    )}
+                  </Dato>
+                </dl>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Etapas del proceso por cobertura (las planea el equipo de Total Claim Assist) */}
       <EtapasCobertura coberturas={caso.coberturas} />
@@ -191,62 +255,17 @@ export function CasoDetalleVista({
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-brand-navy text-base font-bold">
-          Información general
-        </h2>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {caso.tipo_persona === "fisica" ? (
-            <Dato label="Nombre">{caso.nombre ?? "—"}</Dato>
-          ) : (
-            <>
-              <Dato label="Razón social">
-                {caso.nombre_empresa ?? caso.nombre ?? "—"}
-              </Dato>
-              <Dato label="Nombre comercial">
-                {caso.nombre_comercial ?? "—"}
-              </Dato>
-              <Dato label="Representante">
-                {caso.nombre_representante ?? "—"}
-              </Dato>
-            </>
-          )}
-          <Dato label="RFC">{caso.rfc ?? "—"}</Dato>
-          <Dato label="Correo">{caso.correo ?? "—"}</Dato>
-          <Dato label="Teléfono">{caso.telefono ?? "—"}</Dato>
-          <Dato label="Celular">{caso.celular ?? "—"}</Dato>
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-3 border-t border-neutral-200 pt-6">
-        <h2 className="text-brand-navy text-base font-bold">Dirección</h2>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <Dato label="Domicilio">{caso.domicilio ?? "—"}</Dato>
-          <Dato label="Estado">{caso.estado ?? "—"}</Dato>
-          <Dato label="Ciudad">{caso.ciudad ?? "—"}</Dato>
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-3 border-t border-neutral-200 pt-6">
-        <h2 className="text-brand-navy text-base font-bold">
-          Contactos de atención
-        </h2>
-        {caso.contactos_atencion.length === 0 ? (
-          <p className="text-sm text-neutral-500">Sin contactos registrados.</p>
+        <h2 className="text-brand-navy text-base font-bold">Asegurados</h2>
+        {caso.asegurados.length === 0 ? (
+          <p className="text-sm text-neutral-500">
+            Sin asegurados registrados.
+          </p>
         ) : (
-          <ul className="flex flex-col gap-2">
-            {caso.contactos_atencion.map((c) => (
-              <li
-                key={c.id ?? c.nombre}
-                className="rounded-md border border-neutral-200 px-4 py-2 text-sm"
-              >
-                <div className="text-brand-navy font-medium">{c.nombre}</div>
-                <div className="text-xs text-neutral-600">
-                  {[c.telefono, c.email].filter(Boolean).join(" · ") ||
-                    "Sin contacto"}
-                </div>
-              </li>
+          <div className="flex flex-col gap-4">
+            {caso.asegurados.map((a, i) => (
+              <AseguradoDetalle key={a.id ?? i} asegurado={a} indice={i} />
             ))}
-          </ul>
+          </div>
         )}
       </section>
 
@@ -291,6 +310,16 @@ export function CasoDetalleVista({
           </div>
         )}
 
+        <input
+          type="text"
+          value={descripcionArchivo}
+          onChange={(e) => setDescripcionArchivo(e.target.value)}
+          disabled={isPending}
+          maxLength={500}
+          placeholder="Descripción (opcional)"
+          className="text-brand-navy focus:ring-brand-navy/30 h-11 rounded-xl bg-neutral-200/90 px-4 text-sm shadow-inner placeholder:text-neutral-500 focus:ring-2 focus:outline-none"
+        />
+
         <label className="flex h-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 text-sm text-neutral-600 hover:bg-neutral-50">
           <Upload className="mr-2 h-5 w-5" />
           <span>{isPending ? "Procesando…" : "Subir archivo (máx 10 MB)"}</span>
@@ -302,6 +331,9 @@ export function CasoDetalleVista({
             onChange={onSubirArchivo}
           />
         </label>
+        <p className="text-xs text-neutral-500">
+          La descripción se aplica al archivo que subas a continuación.
+        </p>
       </section>
 
       <div className="flex justify-end border-t border-neutral-200 pt-6">
@@ -328,6 +360,134 @@ function Dato({
     <div>
       <dt className="text-xs text-neutral-500">{label}</dt>
       <dd className="text-brand-navy font-medium">{children}</dd>
+    </div>
+  );
+}
+
+function DireccionesDetalle({
+  direcciones,
+}: {
+  direcciones: NonNullable<CasoAsegurado["direcciones"]>;
+}) {
+  if (direcciones.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+        Direcciones
+      </p>
+      <ul className="flex flex-col gap-1 text-sm text-neutral-700">
+        {direcciones.map((d, i) => (
+          <li key={d.id ?? i}>
+            {[d.domicilio, d.ciudad, d.codigo_postal]
+              .filter(Boolean)
+              .join(", ") || "—"}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ContactosDetalle({
+  contactos,
+}: {
+  contactos: NonNullable<CasoAsegurado["contactos_atencion"]>;
+}) {
+  if (contactos.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+        Contactos de atención
+      </p>
+      <ul className="flex flex-col gap-1 text-sm text-neutral-700">
+        {contactos.map((c, i) => (
+          <li key={c.id ?? i}>
+            <span className="font-medium">{c.nombre}</span>
+            {c.relacion_asegurado ? (
+              <span className="text-xs text-neutral-500">
+                {" "}
+                ({c.relacion_asegurado})
+              </span>
+            ) : null}
+            {[c.telefono, c.email].filter(Boolean).length > 0 ? (
+              <span className="text-neutral-500">
+                {" — "}
+                {[c.telefono, c.email].filter(Boolean).join(" · ")}
+              </span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function AseguradoDetalle({
+  asegurado,
+  indice,
+}: {
+  asegurado: CasoAsegurado;
+  indice: number;
+}) {
+  const a = asegurado;
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-neutral-200 p-4">
+      <div className="flex items-center justify-between">
+        <span className="text-brand-navy text-sm font-bold">
+          Asegurado {indice + 1}
+        </span>
+        <span className="text-xs text-neutral-500">
+          {a.tipo_persona === "moral" ? "Persona moral" : "Persona física"}
+        </span>
+      </div>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {a.tipo_persona === "moral" ? (
+          <>
+            <Dato label="Razón social">{a.razon_social ?? "—"}</Dato>
+            <Dato label="Nombre comercial">{a.nombre_comercial ?? "—"}</Dato>
+          </>
+        ) : (
+          <Dato label="Nombre">{a.nombre ?? "—"}</Dato>
+        )}
+        <Dato label="RFC">{a.rfc ?? "—"}</Dato>
+        <Dato label="Correo">{a.correo ?? "—"}</Dato>
+        <Dato label="Teléfono">{a.telefono ?? "—"}</Dato>
+      </div>
+      {a.tipo_persona === "moral" ? (
+        <div className="flex flex-col gap-3">
+          <p className="text-brand-navy text-sm font-bold">
+            Representantes / apoderados
+          </p>
+          {(a.representantes ?? []).map((r, j) => (
+            <div
+              key={r.id ?? j}
+              className="flex flex-col gap-2 rounded-lg border border-neutral-200 bg-neutral-50/60 p-3"
+            >
+              <div className="text-sm font-medium text-neutral-700">
+                {r.nombre}
+                {r.cargo ? (
+                  <span className="text-xs font-normal text-neutral-500">
+                    {" "}
+                    — {r.cargo}
+                  </span>
+                ) : null}
+              </div>
+              {[r.telefono, r.correo, r.rfc].filter(Boolean).length > 0 ? (
+                <div className="text-xs text-neutral-500">
+                  {[r.telefono, r.correo, r.rfc].filter(Boolean).join(" · ")}
+                </div>
+              ) : null}
+              <DireccionesDetalle direcciones={r.direcciones ?? []} />
+              <ContactosDetalle contactos={r.contactos_atencion ?? []} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          <DireccionesDetalle direcciones={a.direcciones ?? []} />
+          <ContactosDetalle contactos={a.contactos_atencion ?? []} />
+        </>
+      )}
     </div>
   );
 }
@@ -373,6 +533,11 @@ function ArchivoCard({ archivo, onBorrar, borrando }: ArchivoCardProps) {
           <div className="text-brand-navy truncate text-sm font-medium">
             {archivo.nombre_original}
           </div>
+          {archivo.descripcion && (
+            <div className="text-xs text-neutral-600">
+              {archivo.descripcion}
+            </div>
+          )}
           <div className="text-xs text-neutral-500">
             {labelTipo(tipo)}
             {tamano ? ` · ${tamano}` : ""}

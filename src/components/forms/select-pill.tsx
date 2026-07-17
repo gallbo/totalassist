@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export type SelectPillOption = { value: string; label: string };
@@ -24,7 +24,35 @@ export function SelectPill({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [filtro, setFiltro] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+  const botonRef = useRef<HTMLButtonElement>(null);
   const seleccionada = options.find((o) => o.value === value);
+
+  // Cierra el panel con Escape (devolviendo el foco al botón) o al hacer clic
+  // fuera. El botón y las opciones viven dentro de rootRef, así que sus clics
+  // no disparan el cierre por click-outside.
+  useEffect(() => {
+    if (!open) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setOpen(false);
+        setFiltro("");
+        botonRef.current?.focus();
+      }
+    }
+    function onPointerDown(e: PointerEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setFiltro("");
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [open]);
 
   const filtradas = filtro
     ? options.filter((o) =>
@@ -35,15 +63,16 @@ export function SelectPill({
   const mostrarBusqueda = buscable && options.length > 6;
 
   return (
-    <div className="relative">
+    <div className="relative w-full sm:w-auto" ref={rootRef}>
       <button
         type="button"
+        ref={botonRef}
         onClick={() => {
           setOpen((o) => !o);
           if (open) setFiltro("");
         }}
         className={cn(
-          "bg-brand-yellow text-brand-navy hover:bg-brand-yellow-hover inline-flex h-10 items-center gap-2 rounded-full px-5 text-sm font-semibold",
+          "bg-brand-yellow text-brand-navy hover:bg-brand-yellow-hover inline-flex h-10 w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold sm:w-auto",
           invalid && "ring-2 ring-red-500",
         )}
       >
@@ -52,7 +81,7 @@ export function SelectPill({
         </span>
       </button>
       {open && (
-        <div className="absolute top-full right-0 z-20 mt-2 flex max-h-80 min-w-[260px] flex-col rounded-xl bg-blue-50 shadow-lg ring-1 ring-neutral-200">
+        <div className="absolute top-full right-0 left-0 z-20 mt-2 flex max-h-80 flex-col rounded-xl bg-blue-50 shadow-lg ring-1 ring-neutral-200 sm:left-auto sm:min-w-[260px]">
           {mostrarBusqueda && (
             <div className="border-b border-blue-100 p-2">
               <input

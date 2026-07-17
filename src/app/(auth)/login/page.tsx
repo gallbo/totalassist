@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
@@ -13,6 +13,24 @@ import { Separator } from "@/components/ui/separator";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Field } from "@/components/forms/field";
 import { loginSchema, type LoginInput } from "@/lib/schemas/auth";
+
+// Aviso al volver a login tras cambiar la contraseña o expirar la sesión.
+function AvisoSesion() {
+  const params = useSearchParams();
+  const motivo = params.get("password")
+    ? "Tu contraseña se actualizó. Inicia sesión con tu nueva contraseña."
+    : params.get("expirada")
+      ? "Tu sesión expiró. Vuelve a iniciar sesión para continuar."
+      : null;
+
+  if (!motivo) return null;
+
+  return (
+    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-center text-sm text-blue-900">
+      {motivo}
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -58,6 +76,10 @@ export default function LoginPage() {
       <h1 className="text-brand-navy text-center text-3xl font-bold">
         ¡Hola Broker!
       </h1>
+
+      <Suspense fallback={null}>
+        <AvisoSesion />
+      </Suspense>
 
       <div className="flex flex-col gap-4">
         <Field label="Correo" htmlFor="email" error={errors.email?.message}>

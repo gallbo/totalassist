@@ -17,6 +17,7 @@ export type EnviarEvaluacionInput = {
 export type EtapaCoberturaPublica = {
   nombre: string | null;
   estatus: "pendiente" | "activa" | "finalizada";
+  porcentaje?: number;
 };
 
 export type ResultadoCoberturaPublica = {
@@ -30,6 +31,7 @@ export type CoberturaPublica = {
   nombre: string | null;
   etapa_actual: string | null;
   ultima_actividad: string | null;
+  avance?: number;
   resultado: ResultadoCoberturaPublica | null;
   etapas: EtapaCoberturaPublica[];
 };
@@ -53,6 +55,7 @@ export type CasoPublico = {
   folio_poliza: string | null;
   monto_estimado: string | number | null;
   coberturas: CoberturaPublica[];
+  avance_general?: number;
   direccion: {
     domicilio: string | null;
     estado: string | null;
