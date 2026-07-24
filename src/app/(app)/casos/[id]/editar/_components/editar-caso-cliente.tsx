@@ -11,12 +11,11 @@ import {
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, X } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Input } from "@/components/ui/input";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Button } from "@/components/ui/button";
 import { AccordionSection } from "@/components/ui/accordion";
-import { LeyendaRequerido } from "@/components/ui/indicador-requerido";
 import { SelectPill } from "@/components/forms/select-pill";
 import type {
   Aseguradora,
@@ -277,7 +276,9 @@ export function EditarCasoCliente({
         </h1>
       </div>
 
-      <LeyendaRequerido className="border-y border-neutral-100 py-2.5" />
+      {/* La leyenda "Obligatorio / Opcional" se quitó (Alicia, jul-2026)
+          junto con los signos amarillos/azules — el `*` en los campos ya
+          es autoexplicativo. */}
 
       {/* ── 1. Datos del seguro ── */}
       <AccordionSection
