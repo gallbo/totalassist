@@ -24,15 +24,18 @@ const TAMANO_MAX = 10 * 1024 * 1024;
 export function DocumentosAsegurado({
   token,
   documentos,
+  casoCerrado = false,
 }: {
   token: string;
   documentos: DocumentosResponse;
+  casoCerrado?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [fileInputKey, setFileInputKey] = useState(0);
 
   const subir = (file: File, documentoCasoId?: number) => {
+    if (casoCerrado) return;
     if (file.size > TAMANO_MAX) {
       toast.error("El archivo supera el límite de 10 MB.");
       setFileInputKey((k) => k + 1);
@@ -91,6 +94,7 @@ export function DocumentosAsegurado({
                     key={d.id}
                     documento={d}
                     disabled={isPending}
+                    bloqueado={casoCerrado}
                     fileInputKey={fileInputKey}
                     onSubir={(file) => subir(file, d.id)}
                   />
@@ -119,22 +123,29 @@ export function DocumentosAsegurado({
         </div>
       ) : null}
 
-      <label className="flex h-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 text-sm text-neutral-600 hover:bg-neutral-50">
-        <Upload className="mr-2 h-5 w-5" />
-        <span>
-          {isPending ? "Enviando…" : "Enviar otro documento (máx 10 MB)"}
-        </span>
-        <input
-          key={fileInputKey}
-          type="file"
-          className="sr-only"
-          disabled={isPending}
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) subir(f);
-          }}
-        />
-      </label>
+      {casoCerrado ? (
+        <p className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
+          Tu caso ya está cerrado. Estos documentos quedan como constancia y ya
+          no es posible enviar nuevos.
+        </p>
+      ) : (
+        <label className="flex h-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 text-sm text-neutral-600 hover:bg-neutral-50">
+          <Upload className="mr-2 h-5 w-5" />
+          <span>
+            {isPending ? "Enviando…" : "Enviar otro documento (máx 10 MB)"}
+          </span>
+          <input
+            key={fileInputKey}
+            type="file"
+            className="sr-only"
+            disabled={isPending}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) subir(f);
+            }}
+          />
+        </label>
+      )}
     </section>
   );
 }
@@ -142,11 +153,13 @@ export function DocumentosAsegurado({
 function ChecklistCard({
   documento,
   disabled,
+  bloqueado,
   fileInputKey,
   onSubir,
 }: {
   documento: DocumentoChecklist;
   disabled: boolean;
+  bloqueado: boolean;
   fileInputKey: number;
   onSubir: (file: File) => void;
 }) {
@@ -196,7 +209,7 @@ function ChecklistCard({
         </a>
       ) : null}
 
-      {!entregado ? (
+      {!entregado && !bloqueado ? (
         <>
           <button
             type="button"

@@ -39,6 +39,12 @@ const ESTATUS_LABELS: Record<number, string> = {
   3: "Finalizado",
 };
 
+const ESTATUS_TONO: Record<number, string> = {
+  0: "text-state-info",
+  1: "text-state-error",
+  3: "text-state-success",
+};
+
 export function CasoDetalleVista({
   caso,
   preguntas = [],
@@ -52,7 +58,12 @@ export function CasoDetalleVista({
   const [fileInputKey, setFileInputKey] = useState(0);
   const [descripcionArchivo, setDescripcionArchivo] = useState("");
 
+  // Caso cerrado (interrumpido o finalizado): de solo lectura para el broker.
+  // No puede editar el caso ni subir/borrar documentos.
+  const casoCerrado = [1, 3].includes(caso.estatus_caso);
+
   const onSubirArchivo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (casoCerrado) return;
     const f = e.target.files?.[0];
     if (!f) return;
     if (f.size > TAMANO_MAX) {
@@ -79,6 +90,7 @@ export function CasoDetalleVista({
   };
 
   const onBorrarArchivo = (archivoId: number) => {
+    if (casoCerrado) return;
     setBorrandoId(archivoId);
     startTransition(async () => {
       const result = await borrarArchivoCasoAction(caso.id, archivoId);
@@ -99,20 +111,26 @@ export function CasoDetalleVista({
           {caso.folio ? `Folio ${caso.folio}` : `Caso #${caso.id}`}
         </h1>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-state-info text-base font-semibold">
+          <span
+            className={`text-base font-semibold ${
+              ESTATUS_TONO[caso.estatus_caso] ?? "text-state-info"
+            }`}
+          >
             {ESTATUS_LABELS[caso.estatus_caso] ??
               `Estatus ${caso.estatus_caso}`}
           </span>
-          <Tooltip label="Editar">
-            <Button
-              variant="outline"
-              aria-label="Editar"
-              className="text-brand-navy inline-flex size-9 items-center justify-center rounded-full bg-white p-0 ring-1 ring-neutral-200 hover:bg-neutral-50"
-              render={<Link href={`/casos/${caso.id}/editar`} />}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-          </Tooltip>
+          {!casoCerrado && (
+            <Tooltip label="Editar">
+              <Button
+                variant="outline"
+                aria-label="Editar"
+                className="text-brand-navy inline-flex size-9 items-center justify-center rounded-full bg-white p-0 ring-1 ring-neutral-200 hover:bg-neutral-50"
+                render={<Link href={`/casos/${caso.id}/editar`} />}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </Tooltip>
+          )}
           <CompartirCasoModal casoId={caso.id} correoCliente={caso.correo} />
         </div>
       </div>
@@ -305,35 +323,47 @@ export function CasoDetalleVista({
                 archivo={a}
                 onBorrar={() => onBorrarArchivo(a.id)}
                 borrando={borrandoId === a.id && isPending}
+                bloqueado={casoCerrado}
               />
             ))}
           </div>
         )}
 
-        <input
-          type="text"
-          value={descripcionArchivo}
-          onChange={(e) => setDescripcionArchivo(e.target.value)}
-          disabled={isPending}
-          maxLength={500}
-          placeholder="Descripción (opcional)"
-          className="text-brand-navy focus:ring-brand-navy/30 h-11 rounded-xl bg-neutral-200/90 px-4 text-sm shadow-inner placeholder:text-neutral-500 focus:ring-2 focus:outline-none"
-        />
+        {casoCerrado ? (
+          <p className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
+            El caso está cerrado. Los archivos quedan como constancia y ya no se
+            pueden subir ni eliminar.
+          </p>
+        ) : (
+          <>
+            <input
+              type="text"
+              value={descripcionArchivo}
+              onChange={(e) => setDescripcionArchivo(e.target.value)}
+              disabled={isPending}
+              maxLength={500}
+              placeholder="Descripción (opcional)"
+              className="text-brand-navy focus:ring-brand-navy/30 h-11 rounded-xl bg-neutral-200/90 px-4 text-sm shadow-inner placeholder:text-neutral-500 focus:ring-2 focus:outline-none"
+            />
 
-        <label className="flex h-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 text-sm text-neutral-600 hover:bg-neutral-50">
-          <Upload className="mr-2 h-5 w-5" />
-          <span>{isPending ? "Procesando…" : "Subir archivo (máx 10 MB)"}</span>
-          <input
-            key={fileInputKey}
-            type="file"
-            className="sr-only"
-            disabled={isPending}
-            onChange={onSubirArchivo}
-          />
-        </label>
-        <p className="text-xs text-neutral-500">
-          La descripción se aplica al archivo que subas a continuación.
-        </p>
+            <label className="flex h-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 text-sm text-neutral-600 hover:bg-neutral-50">
+              <Upload className="mr-2 h-5 w-5" />
+              <span>
+                {isPending ? "Procesando…" : "Subir archivo (máx 10 MB)"}
+              </span>
+              <input
+                key={fileInputKey}
+                type="file"
+                className="sr-only"
+                disabled={isPending}
+                onChange={onSubirArchivo}
+              />
+            </label>
+            <p className="text-xs text-neutral-500">
+              La descripción se aplica al archivo que subas a continuación.
+            </p>
+          </>
+        )}
       </section>
 
       <div className="flex justify-end border-t border-neutral-200 pt-6">
@@ -496,9 +526,15 @@ type ArchivoCardProps = {
   archivo: CasoArchivo;
   onBorrar: () => void;
   borrando: boolean;
+  bloqueado?: boolean;
 };
 
-function ArchivoCard({ archivo, onBorrar, borrando }: ArchivoCardProps) {
+function ArchivoCard({
+  archivo,
+  onBorrar,
+  borrando,
+  bloqueado = false,
+}: ArchivoCardProps) {
   const [openVisor, setOpenVisor] = useState(false);
   const tipo = clasificarArchivo(archivo);
   const tamano = archivo.tamano
@@ -565,19 +601,21 @@ function ArchivoCard({ archivo, onBorrar, borrando }: ArchivoCardProps) {
                 {labelDescarga}
               </a>
             )}
-            <button
-              type="button"
-              onClick={onBorrar}
-              disabled={borrando}
-              className={cn(
-                "ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50",
-                borrando && "opacity-60",
-              )}
-              aria-label="Borrar"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              {borrando ? "…" : "Borrar"}
-            </button>
+            {!bloqueado && (
+              <button
+                type="button"
+                onClick={onBorrar}
+                disabled={borrando}
+                className={cn(
+                  "ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50",
+                  borrando && "opacity-60",
+                )}
+                aria-label="Borrar"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {borrando ? "…" : "Borrar"}
+              </button>
+            )}
           </div>
         </div>
       </div>

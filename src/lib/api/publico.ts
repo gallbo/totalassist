@@ -16,12 +16,12 @@ export type EnviarEvaluacionInput = {
 
 export type EtapaCoberturaPublica = {
   nombre: string | null;
-  estatus: "pendiente" | "activa" | "finalizada";
+  estatus: "pendiente" | "activa" | "finalizada" | "cancelada";
   porcentaje?: number;
 };
 
 export type ResultadoCoberturaPublica = {
-  tipo: "con_pago" | "sin_pago" | "interrumpida";
+  tipo: "con_pago" | "sin_pago" | "suma_agotada" | "interrumpida";
   descripcion: string;
   monto: number | null;
   fecha: string | null;

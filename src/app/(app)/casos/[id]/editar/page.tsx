@@ -72,6 +72,11 @@ export default async function EditarCasoPage({
     );
   }
 
+  // Un caso cerrado (interrumpido o finalizado) es de solo lectura: no se edita.
+  if ([1, 3].includes(datos.caso.estatus_caso)) {
+    redirect(`/casos/${casoId}`);
+  }
+
   return (
     <PageCard>
       <EditarCasoCliente

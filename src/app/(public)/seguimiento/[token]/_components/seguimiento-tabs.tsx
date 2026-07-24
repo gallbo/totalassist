@@ -32,6 +32,9 @@ export function SeguimientoTabs({
     0,
   );
 
+  // Caso cerrado (interrumpido o finalizado): el asegurado ya no sube documentos.
+  const casoCerrado = [1, 3].includes(caso.estatus.id);
+
   return (
     <div className="flex flex-col gap-6">
       <div role="tablist" className="flex gap-2 border-b border-neutral-200">
@@ -52,14 +55,20 @@ export function SeguimientoTabs({
       </div>
 
       {ceja === "estatus" ? (
-        <div className="flex flex-col gap-6">
-          <SeguimientoCliente caso={caso} />
-          {muestraEvaluacion && (
-            <Evaluacion token={token} evaluacionInicial={evaluacion} />
-          )}
-        </div>
+        <SeguimientoCliente
+          caso={caso}
+          slotEvaluacion={
+            muestraEvaluacion ? (
+              <Evaluacion token={token} evaluacionInicial={evaluacion} />
+            ) : null
+          }
+        />
       ) : (
-        <DocumentosAsegurado token={token} documentos={documentos} />
+        <DocumentosAsegurado
+          token={token}
+          documentos={documentos}
+          casoCerrado={casoCerrado}
+        />
       )}
     </div>
   );

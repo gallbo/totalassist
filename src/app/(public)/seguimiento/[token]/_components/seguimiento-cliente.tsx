@@ -11,7 +11,13 @@ const ESTATUS_TONO: Record<number, string> = {
   3: "text-state-success",
 };
 
-export function SeguimientoCliente({ caso }: { caso: CasoPublico }) {
+export function SeguimientoCliente({
+  caso,
+  slotEvaluacion,
+}: {
+  caso: CasoPublico;
+  slotEvaluacion?: React.ReactNode;
+}) {
   const tono = ESTATUS_TONO[caso.estatus.id] ?? "text-state-info";
 
   return (
@@ -64,6 +70,9 @@ export function SeguimientoCliente({ caso }: { caso: CasoPublico }) {
         </Dato>
         <Dato label="Estado">{caso.direccion.estado ?? "—"}</Dato>
       </dl>
+
+      {/* Evaluación arriba: es lo primero que debe ver el cliente al cerrarse el caso */}
+      {slotEvaluacion}
 
       {/* Etapas del proceso por cobertura (las planea el equipo de Total Claim Assist) */}
       <EtapasCobertura coberturas={caso.coberturas} />

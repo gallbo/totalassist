@@ -1,19 +1,21 @@
 import {
+  AlertTriangle,
   Check,
   CheckCircle2,
   CircleDot,
   ShieldCheck,
+  Slash,
   XCircle,
 } from "lucide-react";
 
 export type EtapaCoberturaItem = {
   nombre: string | null;
-  estatus: "pendiente" | "activa" | "finalizada";
+  estatus: "pendiente" | "activa" | "finalizada" | "cancelada";
   porcentaje?: number;
 };
 
 export type ResultadoCoberturaItem = {
-  tipo: "con_pago" | "sin_pago" | "interrumpida";
+  tipo: "con_pago" | "sin_pago" | "suma_agotada" | "interrumpida";
   descripcion: string;
   monto: number | null;
   fecha: string | null;
@@ -32,12 +34,14 @@ const LABEL_ESTATUS: Record<EtapaCoberturaItem["estatus"], string> = {
   pendiente: "Pendiente",
   activa: "En proceso",
   finalizada: "Finalizada",
+  cancelada: "Cancelada",
 };
 
 const COLOR_ESTATUS: Record<EtapaCoberturaItem["estatus"], string> = {
   pendiente: "text-neutral-400",
   activa: "font-semibold text-amber-600",
   finalizada: "font-medium text-state-success",
+  cancelada: "font-medium text-neutral-400",
 };
 
 function NodoEtapa({ estatus }: { estatus: EtapaCoberturaItem["estatus"] }) {
@@ -45,6 +49,13 @@ function NodoEtapa({ estatus }: { estatus: EtapaCoberturaItem["estatus"] }) {
     return (
       <span className="bg-state-success flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white">
         <Check className="h-4 w-4" strokeWidth={3} />
+      </span>
+    );
+  }
+  if (estatus === "cancelada") {
+    return (
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-400 text-white">
+        <Slash className="h-3.5 w-3.5" strokeWidth={3} />
       </span>
     );
   }
@@ -98,7 +109,7 @@ function Stepper({ etapas }: { etapas: EtapaCoberturaItem[] }) {
               className={`text-[11px] leading-tight ${COLOR_ESTATUS[etapa.estatus]}`}
             >
               {LABEL_ESTATUS[etapa.estatus]}
-              {etapa.estatus === "activa" &&
+              {(etapa.estatus === "activa" || etapa.estatus === "cancelada") &&
               typeof etapa.porcentaje === "number"
                 ? ` · ${Math.round(etapa.porcentaje)}%`
                 : ""}
@@ -160,17 +171,21 @@ export function EtapasCobertura({
               </div>
             ) : null}
 
-            {/* Resultado (cobertura terminada o interrumpida) */}
+            {/* Resultado (cobertura indemnizada, con suma agotada o interrumpida) */}
             {cobertura.resultado ? (
               <div
                 className={`flex items-start gap-2 rounded-lg px-3 py-2 ${
                   cobertura.resultado.tipo === "interrumpida"
                     ? "bg-red-50"
-                    : "bg-emerald-50"
+                    : cobertura.resultado.tipo === "suma_agotada"
+                      ? "bg-amber-50"
+                      : "bg-emerald-50"
                 }`}
               >
                 {cobertura.resultado.tipo === "interrumpida" ? (
                   <XCircle className="text-state-danger mt-0.5 h-4 w-4 shrink-0" />
+                ) : cobertura.resultado.tipo === "suma_agotada" ? (
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
                 ) : (
                   <CheckCircle2 className="text-state-success mt-0.5 h-4 w-4 shrink-0" />
                 )}

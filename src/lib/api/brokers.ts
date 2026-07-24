@@ -258,12 +258,12 @@ export type CasoResumen = {
 
 export type EtapaCobertura = {
   nombre: string | null;
-  estatus: "pendiente" | "activa" | "finalizada";
+  estatus: "pendiente" | "activa" | "finalizada" | "cancelada";
   porcentaje?: number;
 };
 
 export type ResultadoCobertura = {
-  tipo: "con_pago" | "sin_pago" | "interrumpida";
+  tipo: "con_pago" | "sin_pago" | "suma_agotada" | "interrumpida";
   descripcion: string;
   monto: number | null;
   fecha: string | null;
