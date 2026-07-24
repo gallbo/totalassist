@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -10,14 +10,12 @@ import {
   type Resolver,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Trash2, Upload, X } from "lucide-react";
-import { toast } from "sonner";
+import { FileClock, Plus, Trash2, Upload, X } from "lucide-react";
+import { toast } from "@/lib/toast";
 import { Input } from "@/components/ui/input";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Button } from "@/components/ui/button";
 import { AccordionSection } from "@/components/ui/accordion";
-import { LeyendaRequerido } from "@/components/ui/indicador-requerido";
-import { SelectPill } from "@/components/forms/select-pill";
 import type {
   Aseguradora,
   CuestionarioPregunta,
@@ -27,6 +25,7 @@ import type {
 } from "@/lib/api/brokers";
 import {
   CuestionarioSecciones,
+  debeMostrarPregunta,
   respuestaYaSeReporto,
   validarCuestionario,
   type ErroresCuestionario,
@@ -45,6 +44,7 @@ import {
   subirArchivoPolizaAction,
 } from "../_actions";
 import { TutorialAltaCasoModal } from "./tutorial-alta-caso-modal";
+import { borrarBorrador, guardarBorrador, leerBorrador } from "./borrador-caso";
 
 const TAMANO_MAX = 10 * 1024 * 1024;
 
@@ -74,6 +74,17 @@ export function NuevoCasoCliente({
   const [erroresCuestionario, setErroresCuestionario] =
     useState<ErroresCuestionario>({});
   const [intentoEnviar, setIntentoEnviar] = useState(false);
+  // Índices de pólizas que no tienen archivo adjunto al momento de intentar
+  // guardar. Se limpia cuando el broker adjunta el archivo faltante.
+  const [polizasSinArchivo, setPolizasSinArchivo] = useState<Set<number>>(
+    new Set(),
+  );
+
+  // Banner de borrador: al montar checamos si hay uno guardado; si el
+  // broker acepta restaurarlo, cargamos sus datos al form.
+  const [borradorPendiente, setBorradorPendiente] = useState<{
+    guardadoEn: string;
+  } | null>(null);
 
   const {
     register,
@@ -82,15 +93,26 @@ export function NuevoCasoCliente({
     watch,
     setValue,
     setError,
+    reset,
+    getValues,
     formState: { errors },
   } = useForm<NuevoCasoSchema>({
     resolver: zodResolver(
       nuevoCasoSchema,
     ) as unknown as Resolver<NuevoCasoSchema>,
+    // Feedback inmediato al broker (Alicia, jul-2026): cada campo se
+    // valida al perder el foco. Después de tocarlo una vez, sigue
+    // reevaluándose en cada tecleo. Sin este modo el error solo aparecía
+    // al hacer submit, forzando al broker a "adivinar" qué campo estaba mal.
+    mode: "onBlur",
+    reValidateMode: "onChange",
     defaultValues: {
       polizas: [polizaVacia()],
       asegurados: [aseguradoFisicaVacio()],
-      beneficiarios: [],
+      // Alicia (jul-2026): mostrar 1 fila vacía de beneficiarios desde
+      // el inicio en lugar del botón "Agregar" con lista vacía. El broker
+      // ve inmediatamente qué debe capturar.
+      beneficiarios: [{ nombre: "", parentesco: "", porcentaje: null }],
     },
   });
 
@@ -104,6 +126,92 @@ export function NuevoCasoCliente({
     name: "polizas",
     keyName: "_key",
   });
+
+  // ── Borrador: detectar al montar ─────────────────────────────────
+  // Si el broker abandonó el form antes de terminar y quedó algo en
+  // localStorage, mostramos el banner para que decida "restaurar" o
+  // "empezar de cero".
+  useEffect(() => {
+    const b = leerBorrador();
+    if (b) {
+      setBorradorPendiente({ guardadoEn: b.guardadoEn });
+    }
+  }, []);
+
+  // Espejo del estado como ref — usado por el timer de autoguardado
+  // para leer el valor MÁS reciente sin que el closure quede stale.
+  // Sin esto, el autoguardado que se programó al montar con
+  // borradorPendiente=null (default de React antes de leer localStorage)
+  // dispararía 500ms después y pisaría el borrador con datos vacíos —
+  // exactamente el bug reportado por Juan (jul-2026): "restauro pero
+  // igual quedan los campos vacíos".
+  const borradorPendienteRef = useRef<{ guardadoEn: string } | null>(null);
+  useEffect(() => {
+    borradorPendienteRef.current = borradorPendiente;
+  }, [borradorPendiente]);
+
+  const restaurarBorrador = () => {
+    const b = leerBorrador();
+    if (!b) {
+      setBorradorPendiente(null);
+      return;
+    }
+    // reset() pisa TODO el form con los datos del borrador. Cualquier
+    // valor default se pierde — está bien porque queremos exactamente
+    // el snapshot guardado.
+    reset(b.datosForm as NuevoCasoSchema);
+    setRespuestas(b.respuestasCuestionario ?? {});
+    setBorradorPendiente(null);
+    toast.success("Borrador restaurado.");
+  };
+
+  const descartarBorrador = () => {
+    borrarBorrador();
+    setBorradorPendiente(null);
+  };
+
+  // ── Autoguardado con debounce ────────────────────────────────────
+  // Nos suscribimos a los cambios del form + de las respuestas del
+  // cuestionario y guardamos en localStorage 500ms después de la última
+  // edición. El debounce evita saturar el storage con cada tecla.
+  //
+  // IMPORTANTE: mientras el banner "Tienes un caso a medio capturar"
+  // está visible (borradorPendienteRef !== null) NO guardamos — así
+  // no pisamos el borrador viejo con los defaults vacíos del form
+  // recién montado antes de que el broker decida restaurar o descartar.
+  const timerAutoguardadoRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const subscription = watch(() => {
+      if (timerAutoguardadoRef.current) {
+        clearTimeout(timerAutoguardadoRef.current);
+      }
+      timerAutoguardadoRef.current = setTimeout(() => {
+        if (borradorPendienteRef.current) return;
+        guardarBorrador(getValues(), respuestas);
+      }, 500);
+    });
+    return () => {
+      subscription.unsubscribe();
+      if (timerAutoguardadoRef.current) {
+        clearTimeout(timerAutoguardadoRef.current);
+      }
+    };
+  }, [watch, getValues, respuestas]);
+
+  // Cuando el broker responde una pregunta del cuestionario, también
+  // guardamos (el cuestionario vive fuera de RHF).
+  useEffect(() => {
+    if (timerAutoguardadoRef.current) {
+      clearTimeout(timerAutoguardadoRef.current);
+    }
+    timerAutoguardadoRef.current = setTimeout(() => {
+      if (borradorPendienteRef.current) return;
+      guardarBorrador(getValues(), respuestas);
+    }, 500);
+  }, [respuestas, getValues]);
 
   const preguntas = useMemo(
     () => (tipoSeguroId ? (cuestionarios[String(tipoSeguroId)] ?? []) : []),
@@ -173,8 +281,36 @@ export function NuevoCasoCliente({
       return;
     }
 
+    // Validación de archivo obligatorio por póliza (cambio jul-2026): el
+    // caso NO se puede guardar si alguna póliza no tiene archivo adjunto.
+    // En edición cuenta como "tiene archivo" tanto un archivo nuevo como
+    // uno cargado previamente en Skipper (aquí no aplica: nuevo caso).
+    const faltantes = new Set<number>();
+    polizas.fields.forEach((f, idx) => {
+      if (!polizaFiles[f._key]) faltantes.add(idx);
+    });
+    if (faltantes.size > 0) {
+      setPolizasSinArchivo(faltantes);
+      const labels = Array.from(faltantes)
+        .sort((a, b) => a - b)
+        .map((i) => `Póliza ${i + 1}`);
+      const listado =
+        labels.length <= 3
+          ? labels.join(", ")
+          : `${labels.slice(0, 3).join(", ")} y ${labels.length - 3} más`;
+      toast.error(`Adjunta el archivo de: ${listado}.`);
+      // Scroll a la primera póliza sin archivo.
+      scrollAlPrimerError();
+      return;
+    }
+
+    // Payload del cuestionario — se omiten preguntas que hoy están
+    // ocultas por regla condicional. Si el broker respondió "Hospitalización"
+    // (habilita ID 112), luego cambió a "Consulta o estudios" (oculta 112),
+    // no queremos enviar el número de días residual — sería inconsistente.
     const cuestionarioPayload: Record<string, string> = {};
     for (const p of preguntas) {
+      if (!debeMostrarPregunta(p, respuestas)) continue;
       const valor = respuestas[p.pregunta_id]?.trim();
       if (valor) cuestionarioPayload[String(p.pregunta_id)] = valor;
     }
@@ -271,16 +407,43 @@ export function NuevoCasoCliente({
         });
       }
 
+      // El caso se creó — limpiamos el borrador de localStorage para
+      // que la próxima vez que el broker abra /casos/nuevo empiece limpio.
+      borrarBorrador();
       toast.success("Caso registrado.");
       router.push("/casos");
     });
   };
 
-  const onInvalid = () => {
+  const onInvalid = (
+    errores: import("react-hook-form").FieldErrors<NuevoCasoSchema>,
+  ) => {
     setIntentoEnviar(true);
     // Marca también los errores del cuestionario para abrir su sección.
-    setErroresCuestionario(validarCuestionario(preguntas, respuestas));
-    toast.error("Revisa los campos marcados antes de continuar.");
+    const errsCuestionario = validarCuestionario(preguntas, respuestas);
+    setErroresCuestionario(errsCuestionario);
+
+    // Armamos lista de campos con nombres humanos. Si hay >3 se abrevia a
+    // "Campo1, Campo2, Campo3 y N más" para no hacer un toast enorme.
+    const campos = nombresDeCamposConError(errores);
+    if (Object.keys(errsCuestionario).length > 0) {
+      campos.push("Cuestionario del siniestro");
+    }
+    // Dedupe preservando orden.
+    const unicos: string[] = [];
+    for (const c of campos) if (!unicos.includes(c)) unicos.push(c);
+
+    if (unicos.length > 0) {
+      const listado =
+        unicos.length <= 3
+          ? unicos.join(", ")
+          : `${unicos.slice(0, 3).join(", ")} y ${unicos.length - 3} más`;
+      toast.error(`Faltan: ${listado}.`, { duration: 6000 });
+    } else {
+      toast.error("Revisa los campos marcados antes de continuar.");
+    }
+
+    scrollAlPrimerError();
   };
 
   // Errores por sección: con error el acordeón se abre y se pinta en rojo.
@@ -302,19 +465,56 @@ export function NuevoCasoCliente({
         onSubmit={handleSubmit(onSubmit, onInvalid)}
         className="flex flex-col gap-5"
       >
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        {/* Header simplificado (Alicia, jul-2026): se retiró el badge
+            "Paquete activo: X de Y casos restantes" — el broker lo ve
+            en el dashboard y no aporta al momento de capturar. También
+            se quitó la leyenda "Obligatorio/Opcional" que quedaba de
+            adorno; los campos ya se marcan con asterisco. */}
+        <div className="flex items-center">
           <h1 className="text-brand-navy text-xl font-bold">
             Registro de caso
           </h1>
-          {paqueteActivo && (
-            <span className="text-sm text-neutral-600">
-              Paquete activo: {paqueteActivo.casos_restantes} de{" "}
-              {paqueteActivo.numero_casos} casos restantes
-            </span>
-          )}
         </div>
 
-        <LeyendaRequerido className="border-y border-neutral-100 py-2.5" />
+        {/* Banner "restaurar borrador" — Alicia (jul-2026): "estaría muy
+            bien que el formato se pudiera autoguardar sin necesidad del
+            botón, que quedara como una especie de borrador". Guardamos en
+            localStorage y al volver a entrar se ofrece restaurar.
+            Los archivos adjuntos NO se restauran (blobs no serializables). */}
+        {borradorPendiente && (
+          <div className="flex flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <FileClock className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
+              <div>
+                <p className="font-medium">Tienes un caso a medio capturar.</p>
+                <p className="text-xs text-blue-800/80">
+                  Se guardó automáticamente el{" "}
+                  {new Date(borradorPendiente.guardadoEn).toLocaleString(
+                    "es-MX",
+                    { dateStyle: "medium", timeStyle: "short" },
+                  )}
+                  . Los archivos adjuntos deberás volver a subirlos.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 sm:justify-end">
+              <button
+                type="button"
+                onClick={restaurarBorrador}
+                className="bg-brand-navy hover:bg-brand-navy/90 rounded-md px-3 py-1.5 text-xs font-semibold text-white"
+              >
+                Restaurar borrador
+              </button>
+              <button
+                type="button"
+                onClick={descartarBorrador}
+                className="rounded-md border border-blue-300 bg-white px-3 py-1.5 text-xs font-semibold text-blue-900 hover:bg-blue-100"
+              >
+                Descartar
+              </button>
+            </div>
+          </div>
+        )}
 
         {!paqueteActivo && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -335,51 +535,66 @@ export function NuevoCasoCliente({
           forzarAbierto={intentoEnviar && errorSeguro}
           conError={errorSeguro}
         >
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          {/* Selects como dropdowns tradicionales (Alicia, jul-2026).
+              Antes eran pills amarillos con modal — Alicia pidió el patrón
+              clásico con etiqueta arriba + <select> estándar para que el
+              broker no tenga que abrir un modal por cada dato. */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Controller
               control={control}
               name="tipo_seguro_id"
               render={({ field, fieldState }) => (
-                <div className="flex w-full flex-col gap-1 sm:w-auto">
-                  <SelectPill
-                    label="Tipo de seguro"
-                    options={tiposSeguro.map((t) => ({
-                      value: String(t.id),
-                      label: t.nombre,
-                    }))}
+                <Field
+                  label="Tipo de seguro *"
+                  error={fieldState.error?.message}
+                >
+                  <select
                     value={field.value ? String(field.value) : ""}
-                    onChange={(v) => onCambioTipoSeguro(v ? Number(v) : null)}
-                    invalid={!!fieldState.error}
-                  />
-                  {fieldState.error && (
-                    <span className="text-xs text-red-600">
-                      {fieldState.error.message}
-                    </span>
-                  )}
-                </div>
+                    onChange={(e) =>
+                      onCambioTipoSeguro(
+                        e.target.value ? Number(e.target.value) : null,
+                      )
+                    }
+                    aria-invalid={!!fieldState.error}
+                    className={`text-brand-navy focus:ring-brand-navy/30 h-10 w-full rounded-md bg-neutral-100 px-3 text-sm focus:ring-2 focus:outline-none ${
+                      fieldState.error ? "ring-2 ring-red-400" : ""
+                    }`}
+                  >
+                    <option value="">Selecciona una opción</option>
+                    {tiposSeguro.map((t) => (
+                      <option key={t.id} value={String(t.id)}>
+                        {t.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
               )}
             />
             <Controller
               control={control}
               name="aseguradora_id"
               render={({ field, fieldState }) => (
-                <div className="flex w-full flex-col gap-1 sm:w-auto">
-                  <SelectPill
-                    label="Aseguradora"
-                    options={aseguradoras.map((a) => ({
-                      value: String(a.id),
-                      label: a.nombre,
-                    }))}
+                <Field label="Aseguradora *" error={fieldState.error?.message}>
+                  <select
                     value={field.value ? String(field.value) : ""}
-                    onChange={(v) => field.onChange(v ? Number(v) : null)}
-                    invalid={!!fieldState.error}
-                  />
-                  {fieldState.error && (
-                    <span className="text-xs text-red-600">
-                      {fieldState.error.message}
-                    </span>
-                  )}
-                </div>
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value ? Number(e.target.value) : null,
+                      )
+                    }
+                    aria-invalid={!!fieldState.error}
+                    className={`text-brand-navy focus:ring-brand-navy/30 h-10 w-full rounded-md bg-neutral-100 px-3 text-sm focus:ring-2 focus:outline-none ${
+                      fieldState.error ? "ring-2 ring-red-400" : ""
+                    }`}
+                  >
+                    <option value="">Selecciona una opción</option>
+                    {aseguradoras.map((a) => (
+                      <option key={a.id} value={String(a.id)}>
+                        {a.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
               )}
             />
           </div>
@@ -393,11 +608,29 @@ export function NuevoCasoCliente({
               register={register}
               fields={polizas.fields}
               onAppend={() => polizas.append(polizaVacia())}
-              onRemove={(i) => polizas.remove(i)}
+              onRemove={(i) => {
+                polizas.remove(i);
+                // Cuando el broker quita una póliza, sus índices dejan de tener
+                // sentido — limpiamos el set para evitar arrastrar el error.
+                setPolizasSinArchivo(new Set());
+              }}
               files={polizaFiles}
-              onFileChange={(key, file) =>
-                setPolizaFiles((prev) => ({ ...prev, [key]: file }))
-              }
+              onFileChange={(key, file) => {
+                setPolizaFiles((prev) => ({ ...prev, [key]: file }));
+                // Al adjuntar un archivo, limpiamos ese índice del set de
+                // pólizas marcadas — así el rojo desaparece en vivo.
+                if (file) {
+                  const idx = polizas.fields.findIndex((p) => p._key === key);
+                  if (idx >= 0 && polizasSinArchivo.has(idx)) {
+                    setPolizasSinArchivo((prev) => {
+                      const next = new Set(prev);
+                      next.delete(idx);
+                      return next;
+                    });
+                  }
+                }
+              }}
+              indicesSinArchivo={polizasSinArchivo}
             />
           </div>
         </AccordionSection>
@@ -479,6 +712,13 @@ export function NuevoCasoCliente({
           descripcion="Beneficiarios de la póliza"
           obligatorio={false}
         >
+          {/* Error del array (ej. suma de % no da 100) — se mostraría
+              acá arriba para que el broker lo vea sin buscar. */}
+          {typeof errors.beneficiarios?.message === "string" && (
+            <div className="mb-3 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {errors.beneficiarios.message}
+            </div>
+          )}
           <div className="flex flex-col gap-3">
             {beneficiarios.fields.map((f, i) => (
               <div
@@ -607,4 +847,58 @@ function Field({
       {error && <span className="text-xs text-red-600">{error}</span>}
     </label>
   );
+}
+
+/**
+ * Mapa de nombres técnicos del schema Zod → etiqueta humana que va en el toast.
+ * Solo listamos los campos de primer nivel que le importan al broker; los
+ * anidados (asegurados.0.nombre, polizas.1.numero_poliza) se colapsan al
+ * nombre del array para no explotar la lista.
+ */
+const CAMPO_LABELS: Record<string, string> = {
+  tipo_seguro_id: "Tipo de seguro",
+  aseguradora_id: "Aseguradora",
+  polizas: "Datos de la póliza",
+  fecha_siniestro: "Fecha del siniestro",
+  num_siniestro_poliza: "Número de siniestro",
+  asegurados: "Datos del asegurado",
+  beneficiarios: "Beneficiarios",
+};
+
+/**
+ * Extrae los nombres humanos de los campos con error de react-hook-form.
+ * Preserva el orden en el que aparecen en el schema (los objetos JS mantienen
+ * orden de inserción) para que el toast liste primero lo que está más arriba
+ * en el formulario.
+ */
+function nombresDeCamposConError(
+  errores: import("react-hook-form").FieldErrors<NuevoCasoSchema>,
+): string[] {
+  const nombres: string[] = [];
+  for (const key of Object.keys(errores)) {
+    nombres.push(CAMPO_LABELS[key] ?? key);
+  }
+  return nombres;
+}
+
+/**
+ * Hace scroll al primer nodo con error visible. Se busca por
+ *   - `[aria-invalid="true"]` (inputs de shadcn/ui marcados por hook-form)
+ *   - fallback a la primera `.text-red-600` (mensajes rojos que sí se pintan)
+ * Se usa requestAnimationFrame para esperar el reflow después de que
+ * `intentoEnviar` fuerce a abrir los accordions.
+ */
+function scrollAlPrimerError() {
+  requestAnimationFrame(() => {
+    const target =
+      document.querySelector('[aria-invalid="true"]') ||
+      document.querySelector(".text-red-600");
+    if (target instanceof HTMLElement) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Si es focoso (input, textarea, select), le damos foco también.
+      if (typeof (target as HTMLInputElement).focus === "function") {
+        (target as HTMLInputElement).focus({ preventScroll: true });
+      }
+    }
+  });
 }

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Check, Copy, Mail, RefreshCw, Share2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,9 +19,16 @@ import { compartirCasoAction } from "../_actions";
 type Props = {
   casoId: number;
   correoCliente: string | null;
+  /**
+   * Trigger opcional. Cuando se pasa se usa ese elemento como el botón
+   * que abre el sheet; si no, se muestra el botón "compartir" por default
+   * (icono redondo con Share2) que ya usaba la vista de detalle del caso.
+   * Útil para reusar el modal desde el dashboard con un botón custom.
+   */
+  trigger?: React.ReactElement;
 };
 
-export function CompartirCasoModal({ casoId, correoCliente }: Props) {
+export function CompartirCasoModal({ casoId, correoCliente, trigger }: Props) {
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
@@ -91,19 +98,26 @@ export function CompartirCasoModal({ casoId, correoCliente }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <Tooltip label="Compartir con cliente">
-        <SheetTrigger
-          render={
-            <Button
-              variant="outline"
-              aria-label="Compartir con cliente"
-              className="text-brand-navy inline-flex size-9 items-center justify-center rounded-full bg-white p-0 ring-1 ring-neutral-200 hover:bg-neutral-50"
-            >
-              <Share2 className="h-4 w-4" />
-            </Button>
-          }
-        />
-      </Tooltip>
+      {trigger ? (
+        // Trigger custom (ej. desde "Más recientes" del dashboard) —
+        // se muestra tal cual sin envolverlo en Tooltip para que el
+        // caller controle su estilo/aria por completo.
+        <SheetTrigger render={trigger} />
+      ) : (
+        <Tooltip label="Compartir con cliente">
+          <SheetTrigger
+            render={
+              <Button
+                variant="outline"
+                aria-label="Compartir con cliente"
+                className="text-brand-navy inline-flex size-9 items-center justify-center rounded-full bg-white p-0 ring-1 ring-neutral-200 hover:bg-neutral-50"
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
+            }
+          />
+        </Tooltip>
+      )}
       <SheetContent side="right" className="w-[380px] sm:w-[440px]">
         <SheetHeader className="border-b border-neutral-200 text-left">
           <SheetTitle className="text-brand-navy text-base font-bold">

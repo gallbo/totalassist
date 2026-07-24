@@ -42,6 +42,11 @@ type Props = {
     number,
     { archivo_nombre: string | null; tiene_archivo: boolean }
   >;
+  // Índices de pólizas que el padre marcó como "sin archivo obligatorio" al
+  // intentar guardar. Cuando el índice está en el set, pintamos el uploader
+  // en rojo y agregamos texto de error. Al adjuntar un archivo, el padre
+  // limpia el índice del set.
+  indicesSinArchivo?: Set<number>;
 };
 
 const TAMANO_MAX = 10 * 1024 * 1024;
@@ -55,6 +60,7 @@ export function PolizasFields({
   files,
   onFileChange,
   archivoActualPorId,
+  indicesSinArchivo,
 }: Props) {
   const { errors } = useFormState({ control, name: "polizas" });
   const polizasErrors = errors.polizas;
@@ -67,6 +73,7 @@ export function PolizasFields({
         const polizaId = (f as { id?: number }).id;
         const actual =
           polizaId && archivoActualPorId ? archivoActualPorId[polizaId] : null;
+        const marcadaSinArchivo = indicesSinArchivo?.has(i) ?? false;
 
         return (
           <div
@@ -120,8 +127,14 @@ export function PolizasFields({
             </div>
 
             <div className="mt-4">
-              <span className="mb-1 block text-xs text-neutral-600">
-                Archivo de la póliza
+              <span
+                className={`mb-1 block text-xs ${
+                  marcadaSinArchivo
+                    ? "font-semibold text-red-600"
+                    : "text-neutral-600"
+                }`}
+              >
+                Archivo de la póliza *
               </span>
               {archivoNuevo ? (
                 <div className="flex items-center justify-between rounded-md bg-neutral-50 px-3 py-2 text-sm">
@@ -145,7 +158,13 @@ export function PolizasFields({
                       </span>
                     </div>
                   )}
-                  <label className="flex h-16 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 text-sm text-neutral-600 hover:bg-neutral-50">
+                  <label
+                    className={`flex h-16 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed text-sm ${
+                      marcadaSinArchivo
+                        ? "border-red-400 bg-red-50 text-red-700 hover:bg-red-100"
+                        : "border-neutral-300 text-neutral-600 hover:bg-neutral-50"
+                    }`}
+                  >
                     <Upload className="mr-2 h-5 w-5" />
                     <span>
                       {actual?.tiene_archivo
@@ -165,6 +184,12 @@ export function PolizasFields({
                       }}
                     />
                   </label>
+                  {marcadaSinArchivo && (
+                    <p className="mt-1 text-xs text-red-600">
+                      El archivo de esta póliza es obligatorio para guardar el
+                      caso.
+                    </p>
+                  )}
                 </>
               )}
             </div>

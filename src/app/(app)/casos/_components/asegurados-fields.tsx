@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import {
   useFieldArray,
+  useFormState,
   useWatch,
   Controller,
   type Control,
@@ -29,6 +30,106 @@ function arrayPath(p: string) {
   return p as FieldArrayPath<NuevoCasoSchema>;
 }
 
+/**
+ * Restricciones estándar para un input de teléfono México (10 dígitos).
+ * - `type="tel"` + `inputMode="numeric"` → teclado numérico en móvil.
+ * - `maxLength={10}` → no permite escribir más allá.
+ * - `pattern` para browsers viejos que validan nativo.
+ * - `onKeyDown` bloquea teclas no numéricas (letras, símbolos) ANTES de
+ *   que lleguen al DOM. Se dejan pasar Backspace, flechas, Tab, etc.
+ * - `onChange` re-sanea (por si pegan "55-1234-5678" o el teclado móvil
+ *   mete un carácter no numérico), reescribiendo el valor del DOM. Así
+ *   RHF ve exactamente lo que ve el broker y la validación de "10 dígitos"
+ *   funciona sobre el mismo string. Un `setValueAs` no basta porque el
+ *   DOM sigue mostrando el texto original.
+ *
+ * Se usa así:
+ *   <Input {...telefonoMxProps} {...register(path("...telefono"), telefonoMxRegisterOptions)} />
+ */
+const telefonoMxProps = {
+  placeholder: "Teléfono",
+  type: "tel" as const,
+  inputMode: "numeric" as const,
+  maxLength: 10,
+  pattern: "\\d{10}",
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Teclas de control y navegación siempre pasan.
+    if (
+      e.key.length > 1 || // Backspace, ArrowLeft, Tab, Enter, etc.
+      e.ctrlKey ||
+      e.metaKey ||
+      e.altKey
+    ) {
+      return;
+    }
+    // Solo dígitos.
+    if (!/^\d$/.test(e.key)) {
+      e.preventDefault();
+    }
+  },
+};
+
+const telefonoMxRegisterOptions = {
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Sanea la entrada (paste, IME, etc.) reescribiendo el DOM.
+    // RHF re-lee el valor después de este handler.
+    const limpio = e.target.value.replace(/\D/g, "").slice(0, 10);
+    if (e.target.value !== limpio) {
+      e.target.value = limpio;
+    }
+  },
+};
+
+/**
+ * Envuelve un input y muestra debajo el mensaje de error de RHF cuando existe.
+ * Se usa para los campos de teléfono y correo — que tienen validación por
+ * formato — para que el feedback visual llegue en cuanto el broker sale del
+ * input (mode: "onBlur" en el useForm padre).
+ */
+function CampoConError({
+  control,
+  fieldName,
+  children,
+}: {
+  control: Ctl;
+  fieldName: FieldPath<NuevoCasoSchema>;
+  children: React.ReactNode;
+}) {
+  const { errors } = useFormState({ control, name: fieldName });
+  // errors puede tener paths anidados (asegurados.0.telefono);
+  // resolvemos por split de puntos para leer el mensaje.
+  const partes = fieldName.split(".");
+  let mensaje: string | undefined;
+  let cursor: unknown = errors;
+  for (const parte of partes) {
+    if (cursor && typeof cursor === "object" && parte in cursor) {
+      cursor = (cursor as Record<string, unknown>)[parte];
+    } else {
+      cursor = undefined;
+      break;
+    }
+  }
+  if (
+    cursor &&
+    typeof cursor === "object" &&
+    "message" in cursor &&
+    typeof (cursor as { message?: unknown }).message === "string"
+  ) {
+    mensaje = (cursor as { message: string }).message;
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      {children}
+      {mensaje && (
+        <span className="text-xs text-red-600" role="alert">
+          {mensaje}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function aseguradoFisicaVacio() {
   return {
     tipo_persona: "fisica" as const,
@@ -36,8 +137,15 @@ export function aseguradoFisicaVacio() {
     rfc: "",
     correo: "",
     telefono: "",
-    direcciones: [],
-    contactos_atencion: [],
+    // Alicia (jul-2026): iniciar con 1 dirección y 1 contacto en blanco
+    // en vez de arrays vacíos que exigen dar clic en "Agregar" antes de
+    // poder llenar. Con esto el broker ve inmediatamente qué capturar.
+    direcciones: [
+      { domicilio: "", estado_id: "", ciudad: "", codigo_postal: "" },
+    ],
+    contactos_atencion: [
+      { nombre: "", telefono: "", email: "", relacion_asegurado: "" },
+    ],
   };
 }
 
@@ -60,8 +168,13 @@ function representanteVacio() {
     rfc: "",
     correo: "",
     telefono: "",
-    direcciones: [],
-    contactos_atencion: [],
+    // Alicia (jul-2026): 1 dirección y 1 contacto en blanco desde el inicio.
+    direcciones: [
+      { domicilio: "", estado_id: "", ciudad: "", codigo_postal: "" },
+    ],
+    contactos_atencion: [
+      { nombre: "", telefono: "", email: "", relacion_asegurado: "" },
+    ],
   };
 }
 
@@ -310,14 +423,28 @@ function ContactosField({
             placeholder="Nombre"
             {...register(path(`${prefijo}.contactos_atencion.${i}.nombre`))}
           />
-          <Input
-            placeholder="Teléfono"
-            {...register(path(`${prefijo}.contactos_atencion.${i}.telefono`))}
-          />
-          <Input
-            placeholder="Correo"
-            {...register(path(`${prefijo}.contactos_atencion.${i}.email`))}
-          />
+          <CampoConError
+            control={control}
+            fieldName={path(`${prefijo}.contactos_atencion.${i}.telefono`)}
+          >
+            <Input
+              {...telefonoMxProps}
+              {...register(
+                path(`${prefijo}.contactos_atencion.${i}.telefono`),
+                telefonoMxRegisterOptions,
+              )}
+            />
+          </CampoConError>
+          <CampoConError
+            control={control}
+            fieldName={path(`${prefijo}.contactos_atencion.${i}.email`)}
+          >
+            <Input
+              placeholder="Correo"
+              type="email"
+              {...register(path(`${prefijo}.contactos_atencion.${i}.email`))}
+            />
+          </CampoConError>
           <Input
             placeholder="Relación con el asegurado"
             {...register(
@@ -401,14 +528,28 @@ function RepresentantesField({
               placeholder="RFC"
               {...register(path(`${prefijo}.representantes.${i}.rfc`))}
             />
-            <Input
-              placeholder="Correo"
-              {...register(path(`${prefijo}.representantes.${i}.correo`))}
-            />
-            <Input
-              placeholder="Teléfono"
-              {...register(path(`${prefijo}.representantes.${i}.telefono`))}
-            />
+            <CampoConError
+              control={control}
+              fieldName={path(`${prefijo}.representantes.${i}.correo`)}
+            >
+              <Input
+                placeholder="Correo"
+                type="email"
+                {...register(path(`${prefijo}.representantes.${i}.correo`))}
+              />
+            </CampoConError>
+            <CampoConError
+              control={control}
+              fieldName={path(`${prefijo}.representantes.${i}.telefono`)}
+            >
+              <Input
+                {...telefonoMxProps}
+                {...register(
+                  path(`${prefijo}.representantes.${i}.telefono`),
+                  telefonoMxRegisterOptions,
+                )}
+              />
+            </CampoConError>
           </div>
           <DireccionesField
             control={control}
@@ -499,14 +640,28 @@ export function AseguradosFields({
               {...register(path("asegurados.0.nombre_comercial"))}
             />
             <Input placeholder="RFC" {...register(path("asegurados.0.rfc"))} />
-            <Input
-              placeholder="Correo"
-              {...register(path("asegurados.0.correo"))}
-            />
-            <Input
-              placeholder="Teléfono"
-              {...register(path("asegurados.0.telefono"))}
-            />
+            <CampoConError
+              control={control}
+              fieldName={path("asegurados.0.correo")}
+            >
+              <Input
+                placeholder="Correo"
+                type="email"
+                {...register(path("asegurados.0.correo"))}
+              />
+            </CampoConError>
+            <CampoConError
+              control={control}
+              fieldName={path("asegurados.0.telefono")}
+            >
+              <Input
+                {...telefonoMxProps}
+                {...register(
+                  path("asegurados.0.telefono"),
+                  telefonoMxRegisterOptions,
+                )}
+              />
+            </CampoConError>
           </div>
           <RepresentantesField
             control={control}
@@ -546,14 +701,28 @@ export function AseguradosFields({
                   placeholder="RFC"
                   {...register(path(`asegurados.${i}.rfc`))}
                 />
-                <Input
-                  placeholder="Correo"
-                  {...register(path(`asegurados.${i}.correo`))}
-                />
-                <Input
-                  placeholder="Teléfono"
-                  {...register(path(`asegurados.${i}.telefono`))}
-                />
+                <CampoConError
+                  control={control}
+                  fieldName={path(`asegurados.${i}.correo`)}
+                >
+                  <Input
+                    placeholder="Correo"
+                    type="email"
+                    {...register(path(`asegurados.${i}.correo`))}
+                  />
+                </CampoConError>
+                <CampoConError
+                  control={control}
+                  fieldName={path(`asegurados.${i}.telefono`)}
+                >
+                  <Input
+                    {...telefonoMxProps}
+                    {...register(
+                      path(`asegurados.${i}.telefono`),
+                      telefonoMxRegisterOptions,
+                    )}
+                  />
+                </CampoConError>
               </div>
               <DireccionesField
                 control={control}

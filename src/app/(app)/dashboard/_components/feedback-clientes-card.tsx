@@ -12,9 +12,7 @@ export function FeedbackClientesCard({ promedio, total }: Props) {
 
   return (
     <section className="flex flex-col gap-4 rounded-2xl bg-white p-5 ring-1 ring-neutral-200">
-      <h2 className="text-brand-navy text-base font-bold">
-        Feedback de clientes
-      </h2>
+      <h2 className="text-brand-navy text-base font-bold">Comentarios</h2>
 
       {total === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl bg-blue-50/50 px-4 py-6 text-center">

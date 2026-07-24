@@ -164,6 +164,7 @@ export function CasosTable({
                     key={c.id}
                     caso={c}
                     index={(initial.page - 1) * initial.per_page + i + 1}
+                    onNavegar={(id) => router.push(`/casos/${id}`)}
                   />
                 ))}
               </tbody>
@@ -211,9 +212,54 @@ export function CasosTable({
   );
 }
 
-function Fila({ caso, index }: { caso: CasoResumen; index: number }) {
+/**
+ * Fila clickable — Alicia (jul-2026) pidió que TODA la fila abra el
+ * detalle del caso, no solo el folio. Se usa router.push() en onClick del
+ * `<tr>` para navegar; el folio conserva su <Link> para permitir
+ * middle-click / "abrir en nueva pestaña", con un guard para no navegar
+ * dos veces cuando el click nativo del <a> ya lo hizo.
+ *
+ * Accesibilidad: role="button" + tabIndex + Enter/Space para poder
+ * activar la fila con teclado.
+ */
+function Fila({
+  caso,
+  index,
+  onNavegar,
+}: {
+  caso: CasoResumen;
+  index: number;
+  onNavegar: (id: number) => void;
+}) {
+  const navegar = () => onNavegar(caso.id);
+
+  const onRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
+    // Si el click original nació en un link o botón dentro de la fila,
+    // dejamos que ese elemento maneje la navegación — evitamos navegar
+    // dos veces (una por el <a>, otra por el router.push).
+    if ((e.target as HTMLElement).closest("a,button")) return;
+    navegar();
+  };
+
+  const onRowKeyDown = (e: React.KeyboardEvent<HTMLTableRowElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      navegar();
+    }
+  };
+
   return (
-    <tr className="border-b border-neutral-100 transition-colors hover:bg-neutral-50">
+    <tr
+      role="button"
+      tabIndex={0}
+      onClick={onRowClick}
+      onKeyDown={onRowKeyDown}
+      aria-label={`Ver detalle del caso ${caso.folio ?? caso.id}`}
+      // Zebra striping visible siempre: pares en azul muy claro para que
+      // se distinga del blanco a simple vista. El hover conserva feedback
+      // con un tono un poco más oscuro que gana sobre ambos fondos.
+      className="focus:ring-brand-navy/30 cursor-pointer transition-colors odd:bg-white even:bg-blue-50/70 hover:!bg-blue-100 focus:!bg-blue-100 focus:ring-2 focus:outline-none"
+    >
       <td className="px-4 py-4 text-center text-neutral-600">{index}</td>
       <td className="px-4 py-4">
         <Link

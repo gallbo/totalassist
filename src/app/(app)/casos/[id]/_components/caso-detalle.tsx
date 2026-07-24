@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowLeft,
   ClipboardList,
   Download,
   ExternalLink,
@@ -16,7 +17,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { EtapasCobertura } from "@/components/domain/etapas-cobertura";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -95,9 +96,25 @@ export function CasoDetalleVista({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <h1 className="text-brand-navy text-xl font-bold">
-          {caso.folio ? `Folio ${caso.folio}` : `Caso #${caso.id}`}
-        </h1>
+        {/* Botón "regresar al listado" + folio.
+            Alicia (jul-2026): al broker le hacía falta un atajo para volver
+            a /casos sin depender del navegador. Se sirve como botón
+            redondo con flecha izquierda antes del título. */}
+        <div className="flex items-center gap-3">
+          <Tooltip label="Regresar al listado">
+            <Button
+              variant="outline"
+              aria-label="Regresar al listado de casos"
+              className="text-brand-navy inline-flex size-9 items-center justify-center rounded-full bg-white p-0 ring-1 ring-neutral-200 hover:bg-neutral-50"
+              render={<Link href="/casos" />}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Tooltip>
+          <h1 className="text-brand-navy text-xl font-bold">
+            {caso.folio ? `Folio ${caso.folio}` : `Caso #${caso.id}`}
+          </h1>
+        </div>
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-state-info text-base font-semibold">
             {ESTATUS_LABELS[caso.estatus_caso] ??
