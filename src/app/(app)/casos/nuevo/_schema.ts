@@ -1,5 +1,21 @@
 import { z } from "zod";
 
+/**
+ * Teléfono México — exactamente 10 dígitos (sin lada de país, espacios ni
+ * guiones). Se acepta vacío/null porque el campo suele ser opcional; solo
+ * cuando el broker escribe algo se valida que sean 10 dígitos.
+ *
+ * Alicia (jul-2026): "Aquí solo debería aceptar números y el número debe
+ * ser mínimo y máximo 10 dígitos ya que es en México."
+ */
+const telefonoMxSchema = z
+  .string()
+  .trim()
+  .refine((v) => !v || /^\d{10}$/.test(v), {
+    message: "Debe tener exactamente 10 dígitos.",
+  })
+  .nullish();
+
 const beneficiarioSchema = z.object({
   nombre: z.string().min(1, "Captura el nombre."),
   parentesco: z.string().nullish(),
@@ -30,7 +46,7 @@ const polizaSchema = z.object({
 
 const contactoAseguradoSchema = z.object({
   nombre: z.string().nullish(),
-  telefono: z.string().nullish(),
+  telefono: telefonoMxSchema,
   email: z.string().email("Correo no válido.").nullish().or(z.literal("")),
   relacion_asegurado: z.string().nullish(),
 });
@@ -40,7 +56,7 @@ const representanteSchema = z.object({
   cargo: z.string().nullish(),
   rfc: z.string().nullish(),
   correo: z.string().email("Correo no válido.").nullish().or(z.literal("")),
-  telefono: z.string().nullish(),
+  telefono: telefonoMxSchema,
   direcciones: z.array(direccionSchema).optional(),
   contactos_atencion: z.array(contactoAseguradoSchema).optional(),
 });
@@ -52,7 +68,7 @@ const aseguradoSchema = z.object({
   nombre_comercial: z.string().nullish(),
   rfc: z.string().nullish(),
   correo: z.string().email("Correo no válido.").nullish().or(z.literal("")),
-  telefono: z.string().nullish(),
+  telefono: telefonoMxSchema,
   direcciones: z.array(direccionSchema).optional(),
   contactos_atencion: z.array(contactoAseguradoSchema).optional(),
   representantes: z.array(representanteSchema).optional(),
@@ -131,6 +147,30 @@ export const nuevoCasoSchema = z
         });
       }
     });
+
+    // Alicia (jul-2026): la suma de % participación de todos los
+    // beneficiarios registrados debe ser 100%. Se ignoran las filas
+    // "fantasma" (nombre vacío) que quedan por el default de 1 fila
+    // vacía inicial — solo se valida si hay al menos un beneficiario
+    // real con nombre. Si sí lo hay, se exige 100% exacto para evitar
+    // que se distribuya mal la póliza.
+    const bensConNombre = (data.beneficiarios ?? []).filter((b) =>
+      b.nombre?.trim(),
+    );
+    if (bensConNombre.length > 0) {
+      const suma = bensConNombre.reduce(
+        (acc, b) => acc + (Number(b.porcentaje) || 0),
+        0,
+      );
+      // Comparamos con tolerancia mínima (0.01) para permitir 33.33+33.33+33.34.
+      if (Math.abs(suma - 100) > 0.01) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["beneficiarios"],
+          message: `La suma del % de participación de los beneficiarios debe ser 100 (actualmente ${suma}%).`,
+        });
+      }
+    }
   });
 
 export type NuevoCasoSchema = z.infer<typeof nuevoCasoSchema>;

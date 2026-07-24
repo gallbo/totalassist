@@ -15,6 +15,43 @@ import { cn } from "@/lib/utils";
 export type RespuestasCuestionario = Record<number, string>;
 export type ErroresCuestionario = Record<string, string>;
 
+/**
+ * Reglas de preguntas condicionales — hardcoded jul-2026 (Alicia).
+ *
+ * Cada regla dice: "la pregunta X solo debe mostrarse si la pregunta Y
+ * está contestada con alguno de estos valores". Si no se cumple, la
+ * pregunta se filtra tanto del render como de la validación.
+ *
+ * TODO: cuando Skipper agregue las columnas `depende_pregunta_id` y
+ * `depende_respuesta` a la tabla claimassistencuestapreguntas, mover
+ * esta lógica al backend para que Alicia pueda configurarla desde ahí
+ * sin tocar código.
+ */
+const REGLAS_CONDICIONALES: Record<
+  number,
+  { dependeDe: number; valoresQueMuestran: string[] }
+> = {
+  // ID 112 (GMM) "¿Cuántos días duró la hospitalización?" solo aparece
+  // si la ID 110 "¿Es hospitalización o solo consulta o estudios?" se
+  // respondió "Hospitalización".
+  112: { dependeDe: 110, valoresQueMuestran: ["Hospitalización"] },
+};
+
+/**
+ * ¿Se debe mostrar esta pregunta según las respuestas actuales?
+ * Si no tiene regla condicional, siempre se muestra.
+ */
+export function debeMostrarPregunta(
+  pregunta: CuestionarioPregunta,
+  respuestas: RespuestasCuestionario,
+): boolean {
+  const regla = REGLAS_CONDICIONALES[pregunta.pregunta_id];
+  if (!regla) return true;
+
+  const valorPadre = (respuestas[regla.dependeDe] ?? "").trim();
+  return regla.valoresQueMuestran.includes(valorPadre);
+}
+
 export function validarCuestionario(
   preguntas: CuestionarioPregunta[],
   respuestas: RespuestasCuestionario,
@@ -22,6 +59,10 @@ export function validarCuestionario(
   const errores: ErroresCuestionario = {};
 
   for (const p of preguntas) {
+    // No exigimos respuesta a una pregunta que hoy está oculta por
+    // condicional — el broker no la ve, no tiene forma de contestarla.
+    if (!debeMostrarPregunta(p, respuestas)) continue;
+
     if (
       p.seccion === 1 &&
       p.obligatoria &&
@@ -31,7 +72,9 @@ export function validarCuestionario(
     }
   }
 
-  const seccionDos = preguntas.filter((p) => p.seccion === 2);
+  const seccionDos = preguntas
+    .filter((p) => p.seccion === 2)
+    .filter((p) => debeMostrarPregunta(p, respuestas));
   const contestoAlguna = seccionDos.some((p) =>
     respuestas[p.pregunta_id]?.trim(),
   );
@@ -183,8 +226,14 @@ export function CuestionarioSecciones({
   disabled?: boolean;
   camposCaso?: React.ReactNode;
 }) {
-  const seccionUno = preguntas.filter((p) => p.seccion === 1);
-  const seccionDos = preguntas.filter((p) => p.seccion === 2);
+  // Filtramos preguntas ocultas por condicional (ver debeMostrarPregunta).
+  // Se hace aquí y no antes para que si el broker cambia la respuesta que
+  // habilita una pregunta, aparezca en vivo sin tener que refrescar.
+  const preguntasVisibles = preguntas.filter((p) =>
+    debeMostrarPregunta(p, respuestas),
+  );
+  const seccionUno = preguntasVisibles.filter((p) => p.seccion === 1);
+  const seccionDos = preguntasVisibles.filter((p) => p.seccion === 2);
 
   if (preguntas.length === 0) {
     return (
