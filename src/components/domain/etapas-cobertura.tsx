@@ -15,11 +15,21 @@ export type EtapaCoberturaItem = {
 };
 
 export type ResultadoCoberturaItem = {
-  tipo: "con_pago" | "sin_pago" | "suma_agotada" | "interrumpida";
+  tipo:
+    | "con_pago"
+    | "sin_pago"
+    | "suma_agotada"
+    | "no_indemnizado"
+    | "interrumpida";
   descripcion: string;
   monto: number | null;
   fecha: string | null;
 };
+
+const ES_CIERRE_POSITIVO: ResultadoCoberturaItem["tipo"][] = [
+  "con_pago",
+  "sin_pago",
+];
 
 export type CoberturaConEtapas = {
   nombre: string | null;
@@ -171,23 +181,25 @@ export function EtapasCobertura({
               </div>
             ) : null}
 
-            {/* Resultado (cobertura indemnizada, con suma agotada o interrumpida) */}
+            {/* Resultado del cierre. Solo con_pago y sin_pago son positivos; el
+                resto se pinta en rojo, para que un cierre nuevo del backend nunca
+                salga como éxito por descarte. */}
             {cobertura.resultado ? (
               <div
                 className={`flex items-start gap-2 rounded-lg px-3 py-2 ${
-                  cobertura.resultado.tipo === "interrumpida"
-                    ? "bg-red-50"
-                    : cobertura.resultado.tipo === "suma_agotada"
-                      ? "bg-amber-50"
-                      : "bg-emerald-50"
+                  cobertura.resultado.tipo === "suma_agotada"
+                    ? "bg-amber-50"
+                    : ES_CIERRE_POSITIVO.includes(cobertura.resultado.tipo)
+                      ? "bg-emerald-50"
+                      : "bg-red-50"
                 }`}
               >
-                {cobertura.resultado.tipo === "interrumpida" ? (
-                  <XCircle className="text-state-danger mt-0.5 h-4 w-4 shrink-0" />
-                ) : cobertura.resultado.tipo === "suma_agotada" ? (
+                {cobertura.resultado.tipo === "suma_agotada" ? (
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                ) : (
+                ) : ES_CIERRE_POSITIVO.includes(cobertura.resultado.tipo) ? (
                   <CheckCircle2 className="text-state-success mt-0.5 h-4 w-4 shrink-0" />
+                ) : (
+                  <XCircle className="text-state-danger mt-0.5 h-4 w-4 shrink-0" />
                 )}
                 <div className="min-w-0">
                   <p className="text-[11px] font-medium tracking-wide text-neutral-500 uppercase">

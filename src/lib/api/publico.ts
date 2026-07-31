@@ -21,7 +21,12 @@ export type EtapaCoberturaPublica = {
 };
 
 export type ResultadoCoberturaPublica = {
-  tipo: "con_pago" | "sin_pago" | "suma_agotada" | "interrumpida";
+  tipo:
+    | "con_pago"
+    | "sin_pago"
+    | "suma_agotada"
+    | "no_indemnizado"
+    | "interrumpida";
   descripcion: string;
   monto: number | null;
   fecha: string | null;
