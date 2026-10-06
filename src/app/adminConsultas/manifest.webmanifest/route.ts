@@ -11,8 +11,8 @@ import { NextResponse } from "next/server";
  */
 export function GET() {
   const body = {
-    name: "Total Assist — Panel de Consultas",
-    short_name: "Consultas",
+    name: "TotalAssist - Connect",
+    short_name: "TA Connect",
     description: "Panel de consultas de Total Assist.",
     start_url: "/adminConsultas",
     scope: "/adminConsultas",

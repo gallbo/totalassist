@@ -14,6 +14,11 @@ import type { Metadata } from "next";
  */
 export const metadata: Metadata = {
   manifest: "/adminConsultas/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "TA Connect",
+    statusBarStyle: "default",
+  },
 };
 
 export default function AdminConsultasRootLayout({

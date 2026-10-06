@@ -34,6 +34,13 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
   manifest: "/manifest.webmanifest",
+  // Nombre que propone iOS al "Agregar a pantalla de inicio" (Safari no toma
+  // el del manifest). Corto para que iOS no lo recorte; /adminConsultas usa "TA Connect".
+  appleWebApp: {
+    capable: true,
+    title: "TA Broker",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
