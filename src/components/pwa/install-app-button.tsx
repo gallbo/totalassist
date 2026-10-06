@@ -66,10 +66,13 @@ function esIos(): boolean {
 
 export function InstallAppButton({
   variante = "claro",
+  compacto = false,
   className,
 }: {
   /** "oscuro" = sobre fondo azul marino (splash del admin). */
   variante?: "claro" | "oscuro";
+  /** Solo ícono hasta xl (header con poco espacio); el texto aparece en pantallas anchas. */
+  compacto?: boolean;
   className?: string;
 }) {
   // En el servidor asumimos "instalada" para no pintar el botón y evitar
@@ -103,8 +106,9 @@ export function InstallAppButton({
         type="button"
         onClick={onClick}
         aria-label="Instalar Total Assist como aplicación"
+        title="Instalar app"
         className={cn(
-          "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition sm:text-sm",
+          "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition sm:text-sm",
           variante === "oscuro"
             ? "bg-white/10 text-white backdrop-blur hover:bg-white/20"
             : "border-brand-navy/20 text-brand-navy border bg-white hover:bg-neutral-50",
@@ -112,7 +116,9 @@ export function InstallAppButton({
         )}
       >
         <Download className="h-3.5 w-3.5" aria-hidden="true" />
-        Instalar app
+        <span className={compacto ? "hidden xl:inline" : undefined}>
+          Instalar app
+        </span>
       </button>
       {instrucciones ? (
         <InstruccionesDialog

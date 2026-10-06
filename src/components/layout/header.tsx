@@ -79,7 +79,7 @@ export function Header({ session, broker }: HeaderProps) {
 
         <div className="hidden items-center gap-3 lg:flex">
           {/* Instalar app: en piloto, solo para BROKERS_PILOTO (src/lib/piloto.ts). */}
-          {mostrarPiloto ? <InstallAppButton /> : null}
+          {mostrarPiloto ? <InstallAppButton compacto /> : null}
           {/* Dropdown Perfil / Cerrar sesión.
               Antes el bloque del nombre disparaba signOut() directamente,
               lo que era confuso: el broker esperaba entrar a su perfil.
@@ -92,7 +92,7 @@ export function Header({ session, broker }: HeaderProps) {
               aria-expanded={menuAbierto}
               className="flex items-center gap-1.5 text-right leading-tight"
             >
-              <span className="text-brand-navy text-sm font-semibold">
+              <span className="text-brand-navy text-sm font-semibold whitespace-nowrap">
                 {userName}
               </span>
               <ChevronDown
