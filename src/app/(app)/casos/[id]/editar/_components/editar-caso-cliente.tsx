@@ -10,7 +10,7 @@ import {
   type Resolver,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Input } from "@/components/ui/input";
 import { BrandButton } from "@/components/ui/brand-button";
@@ -432,8 +432,22 @@ export function EditarCasoCliente({
           {beneficiarios.fields.map((f, i) => (
             <div
               key={f.id}
-              className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_120px_auto]"
+              // En celular: recuadro con título y botón de quitar arriba.
+              className="grid grid-cols-1 gap-3 rounded-lg border border-neutral-200 bg-neutral-50/60 p-3 md:grid-cols-[1fr_1fr_120px_auto] md:rounded-none md:border-0 md:bg-transparent md:p-0"
             >
+              <div className="flex items-center justify-between md:hidden">
+                <span className="text-sm font-semibold text-neutral-700">
+                  Beneficiario {i + 1}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => beneficiarios.remove(i)}
+                  className="text-neutral-500 hover:text-red-600"
+                  aria-label={`Eliminar beneficiario ${i + 1}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
               <Input
                 placeholder="Nombre"
                 {...register(`beneficiarios.${i}.nombre`)}
@@ -453,7 +467,7 @@ export function EditarCasoCliente({
               <button
                 type="button"
                 onClick={() => beneficiarios.remove(i)}
-                className="bg-brand-navy hover:bg-brand-navy-hover flex h-10 w-10 items-center justify-center self-end rounded-full text-white"
+                className="bg-brand-navy hover:bg-brand-navy-hover hidden h-10 w-10 items-center justify-center self-end rounded-full text-white md:flex"
                 aria-label="Eliminar beneficiario"
               >
                 <X className="h-4 w-4" />

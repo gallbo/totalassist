@@ -9,11 +9,14 @@ import { navItems } from "./nav-items";
 type NavPillsProps = {
   orientation?: "horizontal" | "vertical";
   onNavigate?: () => void;
+  /** Muestra también las secciones en piloto (ver src/lib/piloto.ts). */
+  mostrarPiloto?: boolean;
 };
 
 export function NavPills({
   orientation = "horizontal",
   onNavigate,
+  mostrarPiloto = false,
 }: NavPillsProps) {
   const pathname = usePathname();
 
@@ -27,34 +30,40 @@ export function NavPills({
             : "flex-col",
         )}
       >
-        {navItems.map((item) => {
-          const isActive =
-            pathname === item.href || pathname.startsWith(`${item.href}/`);
+        {navItems
+          .filter((item) => mostrarPiloto || !item.piloto)
+          .map((item) => {
+            const isActive =
+              pathname === item.href || pathname.startsWith(`${item.href}/`);
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              className={cn(
-                "relative rounded-full px-5 py-2 text-sm font-medium",
-                orientation === "vertical" && "w-full text-left",
-                isActive
-                  ? "text-brand-navy"
-                  : "text-brand-navy/70 hover:text-brand-navy",
-              )}
-            >
-              {isActive && (
-                <motion.span
-                  layoutId="nav-pill"
-                  className="bg-brand-yellow absolute inset-0 rounded-full shadow-sm"
-                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                />
-              )}
-              <span className="relative z-10">{item.label}</span>
-            </Link>
-          );
-        })}
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onNavigate}
+                className={cn(
+                  "relative rounded-full py-2 text-sm font-medium",
+                  // Con 6 pestañas, en pantallas lg (1024-1279px) el padding
+                  // completo no cabe junto al logo y el menú de usuario.
+                  orientation === "vertical"
+                    ? "w-full px-5 text-left"
+                    : "px-3 whitespace-nowrap xl:px-5",
+                  isActive
+                    ? "text-brand-navy"
+                    : "text-brand-navy/70 hover:text-brand-navy",
+                )}
+              >
+                {isActive && (
+                  <motion.span
+                    layoutId="nav-pill"
+                    className="bg-brand-yellow absolute inset-0 rounded-full shadow-sm"
+                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                  />
+                )}
+                <span className="relative z-10">{item.label}</span>
+              </Link>
+            );
+          })}
       </nav>
     </LayoutGroup>
   );

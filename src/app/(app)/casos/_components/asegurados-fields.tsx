@@ -341,8 +341,23 @@ function DireccionesField({
       {fa.fields.map((f, i) => (
         <div
           key={f.id}
-          className="grid grid-cols-1 gap-2 md:grid-cols-[2fr_1.2fr_1fr_0.8fr_auto]"
+          // En celular cada dirección va en su recuadro con título y
+          // el botón de quitar arriba; desde md es una fila con la X al final.
+          className="grid grid-cols-1 gap-2 rounded-lg border border-neutral-200 bg-neutral-50/60 p-3 md:grid-cols-[2fr_1.2fr_1fr_0.8fr_auto] md:rounded-none md:border-0 md:bg-transparent md:p-0"
         >
+          <div className="flex items-center justify-between md:hidden">
+            <span className="text-sm font-semibold text-neutral-700">
+              Dirección {i + 1}
+            </span>
+            <button
+              type="button"
+              onClick={() => fa.remove(i)}
+              className="text-neutral-500 hover:text-red-600"
+              aria-label="Eliminar dirección {i + 1}"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
           <Input
             placeholder="Domicilio"
             {...register(path(`${prefijo}.direcciones.${i}.domicilio`))}
@@ -373,7 +388,7 @@ function DireccionesField({
           <button
             type="button"
             onClick={() => fa.remove(i)}
-            className="bg-brand-navy hover:bg-brand-navy-hover flex h-10 w-10 items-center justify-center self-end rounded-full text-white"
+            className="bg-brand-navy hover:bg-brand-navy-hover hidden h-10 w-10 items-center justify-center self-end rounded-full text-white md:flex"
             aria-label="Eliminar dirección"
           >
             <X className="h-4 w-4" />
@@ -417,8 +432,23 @@ function ContactosField({
       {fa.fields.map((f, i) => (
         <div
           key={f.id}
-          className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_1fr_1fr_1fr_auto]"
+          // En celular cada contacto va en su recuadro con título y
+          // el botón de quitar arriba; desde md es una fila con la X al final.
+          className="grid grid-cols-1 gap-2 rounded-lg border border-neutral-200 bg-neutral-50/60 p-3 md:grid-cols-[1fr_1fr_1fr_1fr_auto] md:rounded-none md:border-0 md:bg-transparent md:p-0"
         >
+          <div className="flex items-center justify-between md:hidden">
+            <span className="text-sm font-semibold text-neutral-700">
+              Contacto {i + 1}
+            </span>
+            <button
+              type="button"
+              onClick={() => fa.remove(i)}
+              className="text-neutral-500 hover:text-red-600"
+              aria-label="Eliminar contacto {i + 1}"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
           <Input
             placeholder="Nombre"
             {...register(path(`${prefijo}.contactos_atencion.${i}.nombre`))}
@@ -454,7 +484,7 @@ function ContactosField({
           <button
             type="button"
             onClick={() => fa.remove(i)}
-            className="bg-brand-navy hover:bg-brand-navy-hover flex h-10 w-10 items-center justify-center self-end rounded-full text-white"
+            className="bg-brand-navy hover:bg-brand-navy-hover hidden h-10 w-10 items-center justify-center self-end rounded-full text-white md:flex"
             aria-label="Eliminar contacto"
           >
             <X className="h-4 w-4" />

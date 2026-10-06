@@ -44,6 +44,7 @@ import {
   subirArchivoPolizaAction,
 } from "../_actions";
 import { TutorialAltaCasoModal } from "./tutorial-alta-caso-modal";
+import { RechazoPrevioModal } from "./rechazo-previo-modal";
 import { borrarBorrador, guardarBorrador, leerBorrador } from "./borrador-caso";
 
 const TAMANO_MAX = 10 * 1024 * 1024;
@@ -54,6 +55,8 @@ type Props = {
   estados: Estado[];
   paqueteActivo: PaqueteContratado | null;
   cuestionarios: Record<string, CuestionarioPregunta[]>;
+  /** Filtro de rechazo previo; en piloto solo para BROKERS_PILOTO. */
+  mostrarRechazoPrevio?: boolean;
 };
 
 export function NuevoCasoCliente({
@@ -62,6 +65,7 @@ export function NuevoCasoCliente({
   estados,
   paqueteActivo,
   cuestionarios,
+  mostrarRechazoPrevio = false,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -74,6 +78,9 @@ export function NuevoCasoCliente({
   const [erroresCuestionario, setErroresCuestionario] =
     useState<ErroresCuestionario>({});
   const [intentoEnviar, setIntentoEnviar] = useState(false);
+  // true cuando el broker contesta que su cliente NO tiene rechazo previo.
+  // Sin el filtro (brokers fuera del piloto) se pasa directo al tutorial.
+  const [sinRechazo, setSinRechazo] = useState(!mostrarRechazoPrevio);
   // Índices de pólizas que no tienen archivo adjunto al momento de intentar
   // guardar. Se limpia cuando el broker adjunta el archivo faltante.
   const [polizasSinArchivo, setPolizasSinArchivo] = useState<Set<number>>(
@@ -460,7 +467,12 @@ export function NuevoCasoCliente({
 
   return (
     <>
-      <TutorialAltaCasoModal />
+      {/* Primero el filtro de rechazo previo; el tutorial solo después de
+          contestar "No" (oct-2026). */}
+      {mostrarRechazoPrevio ? (
+        <RechazoPrevioModal onContinuar={() => setSinRechazo(true)} />
+      ) : null}
+      {sinRechazo ? <TutorialAltaCasoModal /> : null}
       <form
         onSubmit={handleSubmit(onSubmit, onInvalid)}
         className="flex flex-col gap-5"
@@ -723,8 +735,22 @@ export function NuevoCasoCliente({
             {beneficiarios.fields.map((f, i) => (
               <div
                 key={f.id}
-                className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_120px_auto]"
+                // En celular: recuadro con título y botón de quitar arriba.
+                className="grid grid-cols-1 gap-3 rounded-lg border border-neutral-200 bg-neutral-50/60 p-3 md:grid-cols-[1fr_1fr_120px_auto] md:rounded-none md:border-0 md:bg-transparent md:p-0"
               >
+                <div className="flex items-center justify-between md:hidden">
+                  <span className="text-sm font-semibold text-neutral-700">
+                    Beneficiario {i + 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => beneficiarios.remove(i)}
+                    className="text-neutral-500 hover:text-red-600"
+                    aria-label={`Eliminar beneficiario ${i + 1}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
                 <Input
                   placeholder="Nombre"
                   {...register(`beneficiarios.${i}.nombre`)}
@@ -744,7 +770,7 @@ export function NuevoCasoCliente({
                 <button
                   type="button"
                   onClick={() => beneficiarios.remove(i)}
-                  className="bg-brand-navy hover:bg-brand-navy-hover flex h-10 w-10 items-center justify-center self-end rounded-full text-white"
+                  className="bg-brand-navy hover:bg-brand-navy-hover hidden h-10 w-10 items-center justify-center self-end rounded-full text-white md:flex"
                   aria-label="Eliminar beneficiario"
                 >
                   <X className="h-4 w-4" />
