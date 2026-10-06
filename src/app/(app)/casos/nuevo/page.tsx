@@ -13,6 +13,7 @@ import {
 } from "@/lib/api/brokers";
 import { ApiError } from "@/lib/api/client";
 import { getServerAccessToken } from "@/lib/auth-tokens";
+import { esBrokerPiloto } from "@/lib/piloto";
 import { NuevoCasoCliente } from "./_components/nuevo-caso-cliente";
 
 type Datos =
@@ -91,6 +92,10 @@ export default async function NuevoCasoPage() {
     datos = { ok: false };
   }
 
+  // Modal de rechazo previo: en piloto, solo para BROKERS_PILOTO (src/lib/piloto.ts).
+  const broker = await brokerApi.getMe(token).catch(() => null);
+  const mostrarRechazoPrevio = esBrokerPiloto(broker?.id);
+
   if (!datos.ok) {
     return (
       <PageCard>
@@ -109,6 +114,7 @@ export default async function NuevoCasoPage() {
         estados={datos.estados}
         paqueteActivo={datos.paqueteActivo}
         cuestionarios={datos.cuestionarios}
+        mostrarRechazoPrevio={mostrarRechazoPrevio}
       />
     </PageCard>
   );

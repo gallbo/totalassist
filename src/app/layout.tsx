@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { SCRIPT_CAPTURA_INSTALACION } from "@/components/pwa/install-app-button";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,13 @@ export default function RootLayout({
       lang="es-MX"
       className={cn("h-full antialiased", inter.variable, "font-sans")}
     >
+      <head>
+        {/* Captura beforeinstallprompt antes de que monte React; lo usa
+            el botón "Instalar app" de los logins. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: SCRIPT_CAPTURA_INSTALACION }}
+        />
+      </head>
       <body className="flex min-h-full flex-col">
         <QueryProvider>
           {children}

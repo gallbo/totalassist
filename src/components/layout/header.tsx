@@ -18,6 +18,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import type { BrokerMe } from "@/lib/api/brokers";
+import { esBrokerPiloto } from "@/lib/piloto";
+import { InstallAppButton } from "@/components/pwa/install-app-button";
 
 type HeaderProps = {
   session: Session | null;
@@ -36,6 +38,7 @@ export function Header({ session, broker }: HeaderProps) {
     : "";
   const userName = nombreCompleto || userEmail || "Broker";
   const logoUrl = broker?.logo_url ?? null;
+  const mostrarPiloto = esBrokerPiloto(broker?.id);
 
   // Cerrar el menú al hacer click fuera o presionar Escape (patrón estándar
   // de dropdowns accesibles sin depender de una librería adicional).
@@ -61,16 +64,22 @@ export function Header({ session, broker }: HeaderProps) {
   return (
     <header>
       <div className="flex w-full items-center justify-between gap-4 py-2">
-        <div className="flex items-center">
+        <Link
+          href="/dashboard"
+          aria-label="Total Assist, ir al dashboard"
+          className="flex items-center"
+        >
           <Logo variant="compact" className="lg:hidden" />
           <Logo variant="full" className="hidden lg:flex" />
-        </div>
+        </Link>
 
         <div className="hidden lg:flex">
-          <NavPills />
+          <NavPills mostrarPiloto={mostrarPiloto} />
         </div>
 
         <div className="hidden items-center gap-3 lg:flex">
+          {/* Instalar app: en piloto, solo para BROKERS_PILOTO (src/lib/piloto.ts). */}
+          {mostrarPiloto ? <InstallAppButton /> : null}
           {/* Dropdown Perfil / Cerrar sesión.
               Antes el bloque del nombre disparaba signOut() directamente,
               lo que era confuso: el broker esperaba entrar a su perfil.
@@ -143,7 +152,13 @@ export function Header({ session, broker }: HeaderProps) {
           <SheetContent side="right" className="w-[280px] sm:w-[320px]">
             <SheetHeader className="border-b border-neutral-200 text-left">
               <SheetTitle>
-                <Logo variant="compact" />
+                <Link
+                  href="/dashboard"
+                  onClick={() => setOpen(false)}
+                  aria-label="Total Assist, ir al dashboard"
+                >
+                  <Logo variant="compact" />
+                </Link>
               </SheetTitle>
             </SheetHeader>
 
@@ -165,12 +180,16 @@ export function Header({ session, broker }: HeaderProps) {
               <Separator />
 
               <NavPills
+                mostrarPiloto={mostrarPiloto}
                 orientation="vertical"
                 onNavigate={() => setOpen(false)}
               />
             </div>
 
-            <div className="border-t border-neutral-200 p-4">
+            <div className="flex flex-col gap-3 border-t border-neutral-200 p-4">
+              {mostrarPiloto ? (
+                <InstallAppButton className="justify-center" />
+              ) : null}
               <Button
                 variant="outline"
                 className="w-full"

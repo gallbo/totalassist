@@ -66,24 +66,33 @@ export function EstadoCasosBloque({ counts, paqueteActivo }: Props) {
         <div className="flex flex-1 flex-col gap-3">
           {/* Barra 1: Casos utilizados vs disponibles */}
           <div className="flex overflow-hidden rounded-lg ring-1 ring-neutral-200">
-            <div className="bg-brand-navy flex-1 px-5 py-3 text-sm font-semibold text-white">
+            <div className="bg-brand-navy flex-1 px-3 py-3 text-xs font-semibold text-white sm:px-5 sm:text-sm">
               Casos utilizados ({casosUtilizados})
             </div>
-            <div className="flex-1 bg-blue-50 px-5 py-3 text-sm font-semibold text-neutral-700">
+            <div className="flex-1 bg-blue-50 px-3 py-3 text-xs font-semibold text-neutral-700 sm:px-5 sm:text-sm">
               Casos disponibles {casosDisponibles}/{totalPaquete}
             </div>
           </div>
 
           {/* Barra 2: Estatus segmentado */}
           <div className="grid grid-cols-3 overflow-hidden rounded-lg ring-1 ring-neutral-200">
-            <div className="bg-neutral-500 px-4 py-3 text-center text-sm font-semibold text-white">
-              En proceso ({counts.en_proceso})
+            <div className="flex flex-col items-center bg-neutral-500 px-2 py-3 text-center text-xs font-semibold text-white sm:block sm:px-4 sm:text-sm">
+              <span>En proceso</span>{" "}
+              <span className="text-base sm:text-sm">
+                ({counts.en_proceso})
+              </span>
             </div>
-            <div className="bg-neutral-700 px-4 py-3 text-center text-sm font-semibold text-white">
-              Interrumpido ({counts.interrumpido})
+            <div className="flex flex-col items-center bg-neutral-700 px-2 py-3 text-center text-xs font-semibold text-white sm:block sm:px-4 sm:text-sm">
+              <span>Interrumpido</span>{" "}
+              <span className="text-base sm:text-sm">
+                ({counts.interrumpido})
+              </span>
             </div>
-            <div className="bg-neutral-900 px-4 py-3 text-center text-sm font-semibold text-white">
-              Finalizado ({counts.finalizado})
+            <div className="flex flex-col items-center bg-neutral-900 px-2 py-3 text-center text-xs font-semibold text-white sm:block sm:px-4 sm:text-sm">
+              <span>Finalizado</span>{" "}
+              <span className="text-base sm:text-sm">
+                ({counts.finalizado})
+              </span>
             </div>
           </div>
         </div>
