@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
@@ -33,7 +33,6 @@ function AvisoSesion() {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
 
   const {
@@ -63,8 +62,9 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/dashboard");
-    router.refresh();
+    // Carga completa a propósito: GTM solo vive en las páginas públicas y no
+    // debe seguir activo dentro del portal, donde hay datos de asegurados.
+    window.location.assign("/dashboard");
   };
 
   return (
