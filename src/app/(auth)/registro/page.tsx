@@ -21,6 +21,7 @@ import {
   PRIVACIDAD_VERSION,
 } from "@/lib/privacidad";
 import { AvisoPrivacidadModal } from "@/components/aviso-privacidad-modal";
+import { registrarEvento } from "@/lib/analitica";
 
 const ERROR_FIELD_MAP: Record<string, keyof RegisterInput> = {
   email_duplicado: "email",
@@ -72,6 +73,7 @@ export default function RegistroPage() {
         privacidad_version: PRIVACIDAD_VERSION,
       });
 
+      registrarEvento("registro_completo");
       toast.success("Cuenta creada. Inicia sesión con tus credenciales.");
       router.push("/login");
     } catch (error) {
