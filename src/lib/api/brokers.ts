@@ -306,7 +306,17 @@ export type CasoDetalle = CasoResumen & {
   archivos: CasoArchivo[];
   coberturas: CoberturaCaso[];
   avance_general?: number;
+  evaluacion: EvaluacionCaso | null;
   paquete: { id: number; descripcion: string | null } | null;
+};
+
+export type EvaluacionCaso = {
+  calificacion: number | null;
+  calificacion_plataforma: number | null;
+  calificacion_atencion: number | null;
+  comentarios: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 };
 
 export type ListaCasos = {
@@ -407,7 +417,9 @@ export type FeedbackResumen = {
 
 export type FeedbackComentario = {
   id: number;
-  calificacion: number;
+  calificacion: number | null;
+  calificacion_plataforma: number | null;
+  calificacion_atencion: number | null;
   comentarios: string | null;
   created_at: string | null;
   caso: {

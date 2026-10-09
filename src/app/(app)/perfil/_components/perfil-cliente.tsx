@@ -3,13 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ChevronRight,
-  MessageSquareText,
-  Pencil,
-  Star,
-  Trash2,
-} from "lucide-react";
+import { ChevronRight, MessageSquareText, Pencil, Trash2 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Field } from "@/components/forms/field";
+import { Estrellas } from "@/components/domain/estrellas";
 import { PeopleTable, type PeopleRow } from "@/components/domain/people-table";
 import {
   PromotoriasTable,
@@ -36,7 +31,6 @@ import type {
   Promotoria,
   RedSocial,
 } from "@/lib/api/brokers";
-import { cn } from "@/lib/utils";
 import {
   actualizarPerfilAction,
   cambiarPasswordAction,
@@ -404,10 +398,10 @@ export function PerfilCliente({ initial, feedback }: Props) {
         <h1 className="text-brand-navy text-xl font-bold">Mi perfil</h1>
         {feedback.total > 0 ? (
           <Link
-            href="/comentarios"
+            href="/evaluaciones"
             className="text-brand-navy inline-flex items-center gap-1 text-sm font-semibold hover:underline"
           >
-            Ver comentarios
+            Ver evaluaciones
             <ChevronRight className="h-4 w-4" />
           </Link>
         ) : null}
@@ -732,47 +726,36 @@ export function PerfilCliente({ initial, feedback }: Props) {
 }
 
 function FeedbackBloque({ feedback }: { feedback: FeedbackResumen }) {
-  const promedioRedondeado = Math.round(feedback.promedio);
-
   return (
     <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-neutral-50 px-4 py-3 ring-1 ring-neutral-200">
       <div className="flex flex-col gap-1">
-        <span className="text-xs text-neutral-500">Feedback de clientes</span>
+        <span className="text-xs text-neutral-500">
+          Evaluaciones de tus clientes
+        </span>
         {feedback.total === 0 ? (
           <span className="text-brand-navy text-sm">
             Aún sin evaluaciones de tus clientes.
           </span>
         ) : (
           <div className="flex items-center gap-1">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <Star
-                key={n}
-                className={cn(
-                  "h-6 w-6",
-                  n <= promedioRedondeado
-                    ? "fill-brand-yellow text-brand-yellow"
-                    : "text-neutral-300",
-                )}
-                strokeWidth={1.5}
-              />
-            ))}
+            <Estrellas valor={feedback.promedio} className="h-6 w-6" />
             <span className="text-brand-navy ml-2 text-sm font-semibold tabular-nums">
               {feedback.promedio.toFixed(1)}
             </span>
             <span className="text-xs text-neutral-500">
               ({feedback.total}{" "}
-              {feedback.total === 1 ? "comentario" : "comentarios"})
+              {feedback.total === 1 ? "evaluación" : "evaluaciones"})
             </span>
           </div>
         )}
       </div>
       {feedback.total > 0 ? (
         <Link
-          href="/comentarios"
+          href="/evaluaciones"
           className="bg-brand-navy hover:bg-brand-navy-hover inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white"
         >
           <MessageSquareText className="h-4 w-4" />
-          Ver comentarios
+          Ver evaluaciones
         </Link>
       ) : null}
     </div>

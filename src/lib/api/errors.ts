@@ -26,6 +26,11 @@ const MENSAJES_POR_CODIGO: Record<string, string> = {
   archivo_no_encontrado: "El archivo ya no existe.",
   almacenamiento_no_disponible:
     "No pudimos guardar el archivo, intenta de nuevo en unos segundos.",
+  caso_no_cerrado: "Podrás evaluar la atención cuando tu caso esté finalizado.",
+  caso_interrumpido: "Este caso se interrumpió, por eso no tiene evaluación.",
+  evaluacion_ya_enviada: "Ya enviaste tu evaluación de este caso. ¡Gracias!",
+  evaluacion_no_encontrada:
+    "No encontramos tu evaluación. Recarga la página e intenta de nuevo.",
 };
 
 export function traducirError(input: {

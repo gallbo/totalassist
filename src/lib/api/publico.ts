@@ -4,14 +4,18 @@ const baseURL =
   process.env.NEXT_PUBLIC_SKIPPER_API_URL ?? "http://localhost:8080";
 
 export type EvaluacionPublica = {
-  calificacion: number;
+  calificacion: number | null;
+  calificacion_plataforma: number | null;
+  calificacion_atencion: number | null;
   comentarios: string | null;
   created_at: string | null;
+  updated_at: string | null;
 };
 
 export type EnviarEvaluacionInput = {
-  calificacion: number;
-  comentarios?: string;
+  calificacion_plataforma: number | null;
+  calificacion_atencion: number | null;
+  comentarios: string | null;
 };
 
 export type EtapaCoberturaPublica = {
@@ -141,6 +145,14 @@ export const publicoApi = {
   enviarEvaluacion(token: string, input: EnviarEvaluacionInput) {
     return request<EvaluacionPublica>({
       method: "POST",
+      url: `/api/publico/casos/${encodeURIComponent(token)}/evaluacion`,
+      data: input,
+    });
+  },
+
+  editarEvaluacion(token: string, input: EnviarEvaluacionInput) {
+    return request<EvaluacionPublica>({
+      method: "PUT",
       url: `/api/publico/casos/${encodeURIComponent(token)}/evaluacion`,
       data: input,
     });

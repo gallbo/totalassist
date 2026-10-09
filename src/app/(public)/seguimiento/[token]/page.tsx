@@ -9,7 +9,7 @@ import { EnlaceExpirado } from "./_components/enlace-expirado";
 import { SeguimientoHeader } from "./_components/seguimiento-header";
 import { SeguimientoTabs } from "./_components/seguimiento-tabs";
 
-const ESTATUS_CERRADOS = new Set([1, 3]);
+const ESTATUS_FINALIZADO = 3;
 
 type Props = {
   params: Promise<{ token: string }>;
@@ -54,7 +54,9 @@ export default async function SeguimientoPage({ params }: Props) {
     );
   }
 
-  const muestraEvaluacion = ESTATUS_CERRADOS.has(payload.caso.estatus.id);
+  const muestraEvaluacion =
+    payload.caso.estatus.id === ESTATUS_FINALIZADO ||
+    payload.evaluacion !== null;
 
   return (
     <>

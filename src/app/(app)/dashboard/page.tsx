@@ -20,7 +20,7 @@ import { RegistroCasosChart } from "./_components/registro-casos-chart";
  * Layout de 2 columnas 7/5 con la izquierda dominante:
  *
  *   ┌───────────────────────────────────────┬─────────────────────┐
- *   │  Estado de los casos                  │  Comentarios        │
+ *   │  Estado de los casos                  │  Evaluaciones       │
  *   │  (barras + botón Comprar + alerta)    │  (feedback promedio)│
  *   │                                       │                     │
  *   ├───────────────────────────────────────┤                     │

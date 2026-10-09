@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { ChevronRight, MessageSquareHeart, Star } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ChevronRight, MessageSquareHeart } from "lucide-react";
+import { Estrellas } from "@/components/domain/estrellas";
 
 type Props = {
   promedio: number;
@@ -8,11 +8,9 @@ type Props = {
 };
 
 export function FeedbackClientesCard({ promedio, total }: Props) {
-  const promedioRedondeado = Math.round(promedio);
-
   return (
     <section className="flex flex-col gap-4 rounded-2xl bg-white p-5 ring-1 ring-neutral-200">
-      <h2 className="text-brand-navy text-base font-bold">Comentarios</h2>
+      <h2 className="text-brand-navy text-base font-bold">Evaluaciones</h2>
 
       {total === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl bg-blue-50/50 px-4 py-6 text-center">
@@ -31,30 +29,19 @@ export function FeedbackClientesCard({ promedio, total }: Props) {
       ) : (
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-1">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <Star
-                key={n}
-                className={cn(
-                  "h-7 w-7",
-                  n <= promedioRedondeado
-                    ? "fill-brand-yellow text-brand-yellow"
-                    : "text-neutral-300",
-                )}
-                strokeWidth={1.5}
-              />
-            ))}
+            <Estrellas valor={promedio} className="h-7 w-7" />
             <span className="text-brand-navy ml-3 text-sm font-semibold tabular-nums">
               {promedio.toFixed(1)}
             </span>
             <span className="text-xs text-neutral-500">
-              ({total} {total === 1 ? "comentario" : "comentarios"})
+              ({total} {total === 1 ? "evaluación" : "evaluaciones"})
             </span>
           </div>
           <Link
-            href="/comentarios"
+            href="/evaluaciones"
             className="text-brand-navy inline-flex items-center gap-1 text-sm font-semibold hover:underline"
           >
-            Ver comentarios
+            Ver evaluaciones
             <ChevronRight className="h-4 w-4" />
           </Link>
         </div>

@@ -13,11 +13,16 @@ import {
   FileSpreadsheet,
   FileText,
   Pencil,
+  Star,
   Trash2,
   Upload,
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import {
+  CalificacionGeneral,
+  DesgloseEvaluacion,
+} from "@/components/domain/calificacion-evaluacion";
 import { EtapasCobertura } from "@/components/domain/etapas-cobertura";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -237,6 +242,10 @@ export function CasoDetalleVista({
 
       {/* Etapas del proceso por cobertura (las planea el equipo de Total Claim Assist) */}
       <EtapasCobertura coberturas={caso.coberturas} />
+
+      {caso.estatus_caso === 3 || caso.evaluacion ? (
+        <EvaluacionDelCliente evaluacion={caso.evaluacion} />
+      ) : null}
 
       {/* Cuestionario del siniestro: las respuestas se muestran aquí mismo (read-only);
           se editan con el botón de editar (lápiz) de la cabecera del caso. */}
@@ -754,4 +763,49 @@ function IconoTipo({ tipo }: { tipo: TipoArchivo }) {
             : "text-neutral-400";
 
   return <Icon className={cn("h-12 w-12", colorClass)} strokeWidth={1.25} />;
+}
+
+function EvaluacionDelCliente({
+  evaluacion,
+}: {
+  evaluacion: CasoDetalle["evaluacion"];
+}) {
+  return (
+    <section className="flex flex-col gap-3 rounded-xl border border-neutral-200 p-4">
+      <div className="flex items-center gap-2">
+        <Star className="text-brand-navy h-5 w-5" />
+        <h2 className="text-brand-navy text-base font-bold">
+          Evaluación del cliente
+        </h2>
+      </div>
+      {evaluacion ? (
+        <>
+          <CalificacionGeneral
+            valor={evaluacion.calificacion}
+            className="h-5 w-5"
+          />
+          <DesgloseEvaluacion evaluacion={evaluacion} />
+          {evaluacion.comentarios ? (
+            <p className="text-sm text-neutral-600 italic">
+              &ldquo;{evaluacion.comentarios}&rdquo;
+            </p>
+          ) : (
+            <p className="text-xs text-neutral-400">
+              Sin comentario adicional.
+            </p>
+          )}
+          <p className="text-xs text-neutral-500">
+            {evaluacion.updated_at
+              ? `Editada el ${formatearFechaLarga(evaluacion.updated_at)}`
+              : `Enviada el ${formatearFechaLarga(evaluacion.created_at)}`}
+          </p>
+        </>
+      ) : (
+        <p className="text-sm text-neutral-600">
+          Tu cliente aún no evalúa este caso. Compártele el enlace del caso para
+          que pueda hacerlo.
+        </p>
+      )}
+    </section>
+  );
 }

@@ -38,6 +38,26 @@ export async function enviarEvaluacionAction(
   }
 }
 
+export async function editarEvaluacionAction(
+  token: string,
+  input: EnviarEvaluacionInput,
+): Promise<EnviarEvaluacionResult> {
+  try {
+    const data = await publicoApi.editarEvaluacion(token, input);
+    revalidatePath(`/seguimiento/${token}`);
+    return { ok: true, data };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return { ok: false, message: error.message, code: error.code };
+    }
+    return {
+      ok: false,
+      message:
+        "No pudimos guardar los cambios. Intenta de nuevo en unos segundos.",
+    };
+  }
+}
+
 export async function subirDocumentoAction(
   token: string,
   formData: FormData,
