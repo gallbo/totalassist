@@ -67,17 +67,19 @@ export function Header({ session, broker }: HeaderProps) {
         <Link
           href="/dashboard"
           aria-label="Total Assist, ir al dashboard"
-          className="flex items-center"
+          className="flex shrink-0 items-center"
         >
-          <Logo variant="compact" className="lg:hidden" />
-          <Logo variant="full" className="hidden lg:flex" />
+          {/* El logo completo (h-12, sin encogerse) solo cabe junto al menú
+              desde xl; antes se aplastaba a lo ancho porque no cabía. */}
+          <Logo variant="compact" className="xl:hidden" />
+          <Logo variant="full" className="hidden h-12 xl:flex" />
         </Link>
 
         <div className="hidden lg:flex">
           <NavPills mostrarPiloto={mostrarPiloto} />
         </div>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="hidden min-w-0 items-center gap-3 lg:flex">
           {/* Instalar app: en piloto, solo para BROKERS_PILOTO (src/lib/piloto.ts). */}
           {mostrarPiloto ? <InstallAppButton compacto /> : null}
           {/* Dropdown Perfil / Cerrar sesión.
@@ -90,9 +92,11 @@ export function Header({ session, broker }: HeaderProps) {
               onClick={() => setMenuAbierto((prev) => !prev)}
               aria-haspopup="menu"
               aria-expanded={menuAbierto}
-              className="flex items-center gap-1.5 text-right leading-tight"
+              className="flex min-w-0 items-center gap-1.5 text-right leading-tight"
+              title={userName}
             >
-              <span className="text-brand-navy text-sm font-semibold whitespace-nowrap">
+              {/* El nombre se recorta (…) si no cabe, para no aplastar el logo. */}
+              <span className="text-brand-navy max-w-[11rem] truncate text-sm font-semibold whitespace-nowrap">
                 {userName}
               </span>
               <ChevronDown

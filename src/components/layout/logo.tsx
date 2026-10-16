@@ -14,8 +14,8 @@ export function Logo({ variant = "full", className, priority }: LogoProps) {
       <Image
         src="/brand/totalassist-shield.png"
         alt="Total Assist"
-        width={128}
-        height={144}
+        width={92}
+        height={85}
         priority={priority}
         className={cn("h-10 w-auto", className)}
       />
@@ -28,8 +28,8 @@ export function Logo({ variant = "full", className, priority }: LogoProps) {
         <Image
           src="/brand/totalassist-shield.png"
           alt="Total Assist"
-          width={64}
-          height={72}
+          width={92}
+          height={85}
           priority={priority}
           className="h-7 w-auto"
         />
@@ -47,7 +47,7 @@ export function Logo({ variant = "full", className, priority }: LogoProps) {
       width={914}
       height={219}
       priority={priority}
-      className={cn("h-16 w-auto", className)}
+      className={cn("h-16 w-auto shrink-0", className)}
     />
   );
 }
