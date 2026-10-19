@@ -1,15 +1,17 @@
 /**
  * Mensajes predefinidos que Manuel puede mandar al hilo desde "Acciones".
  * Portados del submenu de Connect (MensajeController@sendInvitationMsg);
- * "calificar app" ahora apunta a la pagina de TotalAssist en Facebook.
+ * "calificar app" ahora apunta a la pagina de TotalAssist en Facebook y la
+ * de Google a la ficha de Total Assist en Maps (antes era la de Gallbo).
  */
 export type TipoInvitacion = "whatsapp" | "facebook" | "google";
 
-/**
- * Invitaciones que se muestran como boton. Google queda oculta mientras el
- * cliente define el enlace de reseñas; para activarla, agregarla a esta lista.
- */
-export const INVITACIONES_ACTIVAS: TipoInvitacion[] = ["whatsapp", "facebook"];
+/** Invitaciones que se muestran como boton. */
+export const INVITACIONES_ACTIVAS: TipoInvitacion[] = [
+  "whatsapp",
+  "facebook",
+  "google",
+];
 
 export const INVITACIONES: Record<
   TipoInvitacion,
@@ -32,11 +34,11 @@ export const INVITACIONES: Record<
       "Deja tu comentario en el siguiente enlace: https://www.facebook.com/profile.php?id=61588669220194&sk=reviews",
   },
   google: {
-    boton: "Enviar invitación a calificar a Gallbo en Google",
-    confirmTitulo: "¿Enviar invitación a calificar a Gallbo en Google?",
+    boton: "Invitar a calificar TotalAssist en Google",
+    confirmTitulo: "¿Enviar invitación a calificar TotalAssist en Google?",
     texto:
       "¡Tu opinión es importante para nosotros!\n" +
-      "Cuéntale a otros clientes sobre tu experiencia con Gallbo.\n" +
-      "Deja tu comentario en el siguiente enlace: https://bit.ly/3goZ5ru",
+      "Cuéntale a otros clientes sobre tu experiencia con Total Assist.\n" +
+      "Deja tu comentario en el siguiente enlace: https://maps.app.goo.gl/QoE8t6FjGmKGvPii7",
   },
 };
