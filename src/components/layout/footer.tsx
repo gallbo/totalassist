@@ -25,8 +25,8 @@ export function Footer() {
             ))}
           </nav>
           <p className="text-center text-[11px] text-neutral-500 sm:text-right">
-            &copy; {new Date().getFullYear()} Copyright. Todos los derechos
-            reservados www.totalassist.com.mx. | Marca registrada.
+            &copy; {new Date().getFullYear()} Claim Assist México. Todos los
+            derechos reservados. | Marca registrada.
           </p>
         </div>
       </div>

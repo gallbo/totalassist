@@ -275,7 +275,7 @@ export default function RegistroPage() {
                 rel="noopener noreferrer"
                 className="text-brand-navy font-semibold hover:underline"
               >
-                totalclaimassist.com/avisodeprivacidadagentes
+                totalclaimassist.com/aviso-de-privacidad-agentes
               </a>
               {PRIVACIDAD_CONSENTIMIENTO.mid}
               <a

@@ -16,6 +16,8 @@ const sharedRoutes = [
   // para ofrecer "Instalar app". Si el middleware lo redirige al login, el
   // manifest es inválido y Chrome nunca muestra el diálogo de instalación.
   "/adminConsultas/manifest.webmanifest",
+  // Buscadores: solo deja indexar /login (src/app/robots.ts).
+  "/robots.txt",
   "/condiciones",
   "/privacidad",
   "/terminos",

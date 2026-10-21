@@ -1,7 +1,7 @@
 export const PRIVACIDAD_VERSION = "2026-07-03";
 
 export const PRIVACIDAD_URL_SITE =
-  "https://totalclaimassist.com/avisodeprivacidadagentes";
+  "https://totalclaimassist.com/aviso-de-privacidad-agentes";
 export const PRIVACIDAD_URL_PORTAL = "https://totalclaimassist.app/privacidad";
 
 export const PRIVACIDAD_TITULO = "AVISO DE PRIVACIDAD";
@@ -17,7 +17,7 @@ export type AvisoSeccion = {
 };
 
 const DOMICILIO =
-  "Blvd. Enrique Sánchez Alonso 2249, Col. Parque Alamedas, C.P. 80030, en Culiacán, Sinaloa";
+  "Blvd. Enrique Sánchez Alonso 2249, int. 1, Col. Parque Alameda, C.P. 80030, en Culiacán, Sinaloa";
 
 const RESPONSABLE_PARRAFO = `Claim Assist México, S.C. (en lo sucesivo "CAM"), señalando para efectos del presente aviso de privacidad el domicilio ubicado en ${DOMICILIO}, será el responsable de recabar sus datos personales. También será responsable del uso y protección que se le dé a los mismos y a aquellos datos que sean recabados por cualquiera de las sociedades que sean sus controladoras, subsidiarias o filiales, o por terceros contratados para realizar servicios en nombre de CAM, de conformidad con el presente aviso de privacidad ("el Aviso de Privacidad").`;
 
