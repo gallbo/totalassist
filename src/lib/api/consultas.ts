@@ -45,7 +45,12 @@ export type ConsultaResumen = {
   ultimo_mensaje_at: string | null;
   sin_leer: number;
   /** Solo lo llena el endpoint admin. */
-  broker?: { id: number; nombre: string; email: string } | null;
+  broker?: {
+    id: number;
+    nombre: string;
+    email: string;
+    telefono?: string | null;
+  } | null;
 };
 
 export type ConsultaDetalle = ConsultaResumen & {

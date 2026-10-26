@@ -7,6 +7,7 @@ import {
   RotateCcw,
   Send,
   MessageCircle,
+  Phone,
   Share2,
   ThumbsUp,
   XCircle,
@@ -234,6 +235,20 @@ export function HiloConsultaAdmin({
                     className="text-brand-navy/80 text-xs underline"
                   >
                     {broker.email}
+                  </a>
+                </>
+              ) : null}
+              {broker?.telefono ? (
+                <>
+                  <br />
+                  {/* tel: abre el marcador en el celular (Manuel le llama directo). */}
+                  <a
+                    href={`tel:${telefonoParaMarcar(broker.telefono)}`}
+                    className="text-brand-navy mt-1 inline-flex items-center gap-1.5 text-sm font-semibold underline"
+                    aria-label={`Llamar a ${broker.nombre} al ${broker.telefono}`}
+                  >
+                    <Phone className="size-3.5" aria-hidden="true" />
+                    {formatearTelefono(broker.telefono)}
                   </a>
                 </>
               ) : null}
@@ -476,4 +491,18 @@ function MensajeItem({ mensaje }: { mensaje: Mensaje }) {
       ) : null}
     </li>
   );
+}
+
+/** 10 dígitos de México → +52XXXXXXXXXX; cualquier otro formato se marca tal cual (solo dígitos y +). */
+function telefonoParaMarcar(telefono: string): string {
+  const digitos = telefono.replace(/[^\d+]/g, "");
+  return /^\d{10}$/.test(digitos) ? `+52${digitos}` : digitos;
+}
+
+/** "6673900667" → "667 390 0667"; otros formatos se muestran como vienen. */
+function formatearTelefono(telefono: string): string {
+  const digitos = telefono.replace(/\D/g, "");
+  return digitos.length === 10
+    ? `${digitos.slice(0, 3)} ${digitos.slice(3, 6)} ${digitos.slice(6)}`
+    : telefono;
 }
