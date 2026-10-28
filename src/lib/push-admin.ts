@@ -1,7 +1,7 @@
 /**
  * Notificaciones push de la app de Consultas del admin (Manuel).
  *
- * Flujo: se registra /sw-admin.js con scope /adminConsultas/, se pide permiso
+ * Flujo: se registra /sw-admin.js con scope /adminConsultas, se pide permiso
  * (solo con un toque del usuario: Apple lo exige), el navegador crea la
  * suscripción con la llave pública VAPID de Skipper y la registramos en
  * Skipper. Skipper manda el aviso cuando entra una consulta o un mensaje; no
@@ -14,7 +14,9 @@
 import { apiClient } from "@/lib/api/consultas";
 
 export const SW_URL = "/sw-admin.js";
-export const SW_SCOPE = "/adminConsultas/";
+// Sin "/" final: el panel vive en /adminConsultas y con "/adminConsultas/"
+// quedaba fuera del scope (serviceWorker.ready nunca resolvía).
+export const SW_SCOPE = "/adminConsultas";
 
 export type EstadoPush =
   | "no-soportado" // navegador sin Service Worker / Push
@@ -50,6 +52,29 @@ function soportado(): boolean {
 
 async function registro(): Promise<ServiceWorkerRegistration> {
   return navigator.serviceWorker.register(SW_URL, { scope: SW_SCOPE });
+}
+
+/**
+ * Espera a que el service worker de ESTA registración quede activo (no usa
+ * navigator.serviceWorker.ready, que depende de que la página esté en el
+ * scope). Con tope de tiempo para que el botón nunca se quede colgado.
+ */
+async function activo(reg: ServiceWorkerRegistration): Promise<void> {
+  if (reg.active) return;
+  const sw = reg.installing ?? reg.waiting;
+  if (!sw) return;
+  await new Promise<void>((resolve, reject) => {
+    const tope = setTimeout(
+      () => reject(new Error("el navegador no terminó de preparar la app")),
+      15000,
+    );
+    sw.addEventListener("statechange", () => {
+      if (sw.state === "activated") {
+        clearTimeout(tope);
+        resolve();
+      }
+    });
+  });
 }
 
 /** Llave VAPID en base64url → bytes, como la pide pushManager.subscribe. */
@@ -109,7 +134,7 @@ export async function activarPush(): Promise<EstadoPush> {
   }
 
   const reg = await registro();
-  await navigator.serviceWorker.ready;
+  await activo(reg);
   const sub =
     (await reg.pushManager.getSubscription()) ??
     (await reg.pushManager.subscribe({
