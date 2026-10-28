@@ -239,18 +239,28 @@ export function HiloConsultaAdmin({
                 </>
               ) : null}
               {broker?.telefono ? (
-                <>
-                  <br />
-                  {/* tel: abre el marcador en el celular (Manuel le llama directo). */}
+                // Botones propios (no un link en línea con el nombre/correo):
+                // con VoiceOver en iPhone el link en línea se leía pero el
+                // doble toque no marcaba. Cada acción es su propio control de
+                // 44px con el texto visible como etiqueta.
+                <div className="mt-2 flex flex-wrap gap-2">
                   <a
                     href={`tel:${telefonoParaMarcar(broker.telefono)}`}
-                    className="text-brand-navy mt-1 inline-flex items-center gap-1.5 text-sm font-semibold underline"
-                    aria-label={`Llamar a ${broker.nombre} al ${broker.telefono}`}
+                    className="bg-brand-navy inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-white"
                   >
-                    <Phone className="size-3.5" aria-hidden="true" />
-                    {formatearTelefono(broker.telefono)}
+                    <Phone className="size-4" aria-hidden="true" />
+                    Llamar al {formatearTelefono(broker.telefono)}
                   </a>
-                </>
+                  <a
+                    href={`https://wa.me/${telefonoParaMarcar(broker.telefono).replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand-navy inline-flex min-h-11 items-center gap-2 rounded-full border border-neutral-300 bg-white px-4 text-sm font-semibold"
+                  >
+                    <MessageCircle className="size-4" aria-hidden="true" />
+                    WhatsApp
+                  </a>
+                </div>
               ) : null}
             </dd>
           </div>

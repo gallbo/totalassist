@@ -4,6 +4,7 @@ import { ShieldCheck } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { AdminHeaderLogout } from "../_components/AdminHeaderLogout";
 import { AdminNav } from "../_components/admin-nav";
+import { ActivarNotificaciones } from "../_components/activar-notificaciones";
 
 /**
  * Layout de las paginas *autenticadas* de /adminConsultas.
@@ -60,6 +61,7 @@ export default async function AdminAppLayout({
         </div>
       </header>
       <AdminNav />
+      <ActivarNotificaciones />
 
       <main
         id="contenido"
