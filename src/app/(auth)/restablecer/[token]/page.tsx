@@ -92,8 +92,8 @@ export default function RestablecerPage({
       </h1>
 
       <p className="text-center text-sm text-neutral-600">
-        Elige una contraseña segura para tu cuenta. Debe tener al menos 10
-        caracteres, con mayúsculas, minúsculas, números y un símbolo.
+        Elige una contraseña segura para tu cuenta. Debe tener al menos 8
+        caracteres, con una mayúscula, un número y un símbolo.
       </p>
 
       <div className="flex flex-col gap-4">

@@ -129,8 +129,8 @@ const passwordSchema = z
     password_nueva: z
       .string()
       .regex(
-        /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_]).{10,}$/,
-        "Tu contraseña debe tener al menos 10 caracteres, con mayúsculas, minúsculas, números y un símbolo.",
+        /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/,
+        "Tu contraseña debe tener al menos 8 caracteres, con una mayúscula, un número y un símbolo.",
       ),
     password_nueva_confirmation: z.string(),
   })
