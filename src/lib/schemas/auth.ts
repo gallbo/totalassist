@@ -1,5 +1,15 @@
 import { z } from "zod";
 
+export const REQUISITOS_PASSWORD = [
+  { texto: "Mínimo 8 caracteres", cumple: (v: string) => v.length >= 8 },
+  {
+    texto: "Al menos 1 letra mayúscula",
+    cumple: (v: string) => /[A-Z]/.test(v),
+  },
+  { texto: "Al menos 1 número", cumple: (v: string) => /\d/.test(v) },
+  { texto: "Al menos 1 símbolo", cumple: (v: string) => /[\W_]/.test(v) },
+];
+
 const passwordPolicy = z
   .string()
   .regex(

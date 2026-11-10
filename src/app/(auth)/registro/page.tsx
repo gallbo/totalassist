@@ -11,6 +11,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Separator } from "@/components/ui/separator";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Field } from "@/components/forms/field";
+import { RequisitosPassword } from "@/components/forms/requisitos-password";
 import { registerSchema, type RegisterInput } from "@/lib/schemas/auth";
 import { brokerApi } from "@/lib/api/brokers";
 import { ApiError } from "@/lib/api/client";
@@ -41,6 +42,7 @@ export default function RegistroPage() {
     register,
     handleSubmit,
     setError,
+    watch,
     formState: { errors },
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -55,6 +57,8 @@ export default function RegistroPage() {
       password_confirmation: "",
     },
   });
+
+  const password = watch("password");
 
   const confirmarRegistro = async (values: RegisterInput) => {
     setSubmitting(true);
@@ -151,7 +155,14 @@ export default function RegistroPage() {
           </Field>
 
           <Field
-            label="Apellido materno"
+            label={
+              <>
+                Apellido materno
+                <span className="ml-1 text-xs font-normal text-neutral-400">
+                  (opcional)
+                </span>
+              </>
+            }
             htmlFor="apellido_materno"
             error={errors.apellido_materno?.message}
           >
@@ -170,6 +181,7 @@ export default function RegistroPage() {
             <Input
               id="cedula"
               autoCapitalize="characters"
+              placeholder="Ej. A123456"
               disabled={submitting}
               {...register("cedula")}
             />
@@ -204,12 +216,18 @@ export default function RegistroPage() {
             htmlFor="password"
             error={errors.password?.message}
           >
-            <PasswordInput
-              id="password"
-              autoComplete="new-password"
-              disabled={submitting}
-              {...register("password")}
-            />
+            <div className="group flex flex-col gap-1.5">
+              <PasswordInput
+                id="password"
+                autoComplete="new-password"
+                disabled={submitting}
+                {...register("password")}
+              />
+              <RequisitosPassword
+                valor={password}
+                className="hidden group-focus-within:block"
+              />
+            </div>
           </Field>
 
           <Field
