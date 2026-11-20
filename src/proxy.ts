@@ -23,6 +23,7 @@ const sharedRoutes = [
   "/robots.txt",
   "/condiciones",
   "/privacidad",
+  "/privacidad-simplificado",
   "/terminos",
   "/seguimiento",
 ];

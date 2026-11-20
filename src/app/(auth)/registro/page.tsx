@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/lib/toast";
 import { Input } from "@/components/ui/input";
@@ -16,12 +16,11 @@ import { registerSchema, type RegisterInput } from "@/lib/schemas/auth";
 import { brokerApi } from "@/lib/api/brokers";
 import { ApiError } from "@/lib/api/client";
 import { TERMINOS_VERSION } from "@/lib/terminos";
-import { TerminosModal } from "@/components/terminos-modal";
 import {
   PRIVACIDAD_CONSENTIMIENTO,
+  PRIVACIDAD_SIMPLIFICADO_PATH,
   PRIVACIDAD_VERSION,
 } from "@/lib/privacidad";
-import { AvisoPrivacidadModal } from "@/components/aviso-privacidad-modal";
 import { registrarEvento } from "@/lib/analitica";
 
 const ERROR_FIELD_MAP: Record<string, keyof RegisterInput> = {
@@ -32,20 +31,20 @@ const ERROR_FIELD_MAP: Record<string, keyof RegisterInput> = {
 export default function RegistroPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
-  const [terminosOpen, setTerminosOpen] = useState(true);
   const [terminosAceptados, setTerminosAceptados] = useState(false);
-  const [privacidadOpen, setPrivacidadOpen] = useState(false);
   const [privacidadAceptada, setPrivacidadAceptada] = useState(false);
-  const [secuenciaInicial, setSecuenciaInicial] = useState(true);
 
   const {
     register,
     handleSubmit,
     setError,
-    watch,
+    control,
     formState: { errors },
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
+    // Los errores aparecen al salir de cada campo; el botón de envío se
+    // habilita solo cuando todo el formulario es válido (ver formularioCompleto).
+    mode: "onTouched",
     defaultValues: {
       nombre: "",
       apellido_paterno: "",
@@ -58,7 +57,9 @@ export default function RegistroPage() {
     },
   });
 
-  const password = watch("password");
+  const valores = useWatch({ control });
+  const formularioCompleto = registerSchema.safeParse(valores).success;
+  const password = valores.password ?? "";
 
   const confirmarRegistro = async (values: RegisterInput) => {
     setSubmitting(true);
@@ -99,27 +100,10 @@ export default function RegistroPage() {
     }
   };
 
-  // Las aceptaciones se hacen en los popups al abrir la vista; el boton de
-  // envio queda bloqueado hasta que ambas casillas esten marcadas.
+  // El botón de envío queda bloqueado hasta que el formulario esté completo y
+  // válido y ambas casillas estén marcadas.
   const onValid = (values: RegisterInput) => {
     void confirmarRegistro(values);
-  };
-
-  // En la secuencia inicial (al abrir la vista) aceptar los terminos encadena
-  // el aviso. Si el usuario reabre los terminos desde su casilla, solo se
-  // reabre ese popup, no el del aviso.
-  const aceptarTerminos = () => {
-    setTerminosAceptados(true);
-    setTerminosOpen(false);
-    if (secuenciaInicial) {
-      setPrivacidadOpen(true);
-    }
-  };
-
-  const aceptarPrivacidad = () => {
-    setPrivacidadAceptada(true);
-    setPrivacidadOpen(false);
-    setSecuenciaInicial(false);
   };
 
   return (
@@ -249,13 +233,7 @@ export default function RegistroPage() {
             <input
               type="checkbox"
               checked={terminosAceptados}
-              onChange={() => {
-                if (terminosAceptados) {
-                  setTerminosAceptados(false);
-                } else {
-                  setTerminosOpen(true);
-                }
-              }}
+              onChange={(e) => setTerminosAceptados(e.target.checked)}
               className="accent-brand-navy mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
             />
             <span>
@@ -276,24 +254,18 @@ export default function RegistroPage() {
             <input
               type="checkbox"
               checked={privacidadAceptada}
-              onChange={() => {
-                if (privacidadAceptada) {
-                  setPrivacidadAceptada(false);
-                } else {
-                  setPrivacidadOpen(true);
-                }
-              }}
+              onChange={(e) => setPrivacidadAceptada(e.target.checked)}
               className="accent-brand-navy mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
             />
             <span>
               {PRIVACIDAD_CONSENTIMIENTO.pre}
               <a
-                href={PRIVACIDAD_CONSENTIMIENTO.urlSite}
+                href={PRIVACIDAD_SIMPLIFICADO_PATH}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-brand-navy font-semibold hover:underline"
               >
-                totalclaimassist.com/aviso-de-privacidad-agentes
+                {PRIVACIDAD_CONSENTIMIENTO.simplificado}
               </a>
               {PRIVACIDAD_CONSENTIMIENTO.mid}
               <a
@@ -312,7 +284,12 @@ export default function RegistroPage() {
         <div className="flex justify-center">
           <BrandButton
             type="submit"
-            disabled={submitting || !terminosAceptados || !privacidadAceptada}
+            disabled={
+              submitting ||
+              !formularioCompleto ||
+              !terminosAceptados ||
+              !privacidadAceptada
+            }
           >
             {submitting ? "Registrando..." : "Registrarme"}
           </BrandButton>
@@ -327,14 +304,6 @@ export default function RegistroPage() {
           </Link>
         </p>
       </form>
-
-      <TerminosModal open={terminosOpen} onAccept={aceptarTerminos} />
-
-      <AvisoPrivacidadModal
-        open={privacidadOpen}
-        onAccept={aceptarPrivacidad}
-        integralHref="/privacidad"
-      />
     </>
   );
 }

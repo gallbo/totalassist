@@ -1,8 +1,9 @@
-export const PRIVACIDAD_VERSION = "2026-07-03";
+export const PRIVACIDAD_VERSION = "2026-11-20";
 
 export const PRIVACIDAD_URL_SITE =
   "https://totalclaimassist.com/aviso-de-privacidad-agentes";
 export const PRIVACIDAD_URL_PORTAL = "https://totalclaimassist.app/privacidad";
+export const PRIVACIDAD_SIMPLIFICADO_PATH = "/privacidad-simplificado";
 
 export const PRIVACIDAD_TITULO = "AVISO DE PRIVACIDAD";
 export const PRIVACIDAD_SUBTITULO = "AGENTES DE SEGUROS";
@@ -167,7 +168,8 @@ export const PRIVACIDAD_INTEGRAL: AvisoSeccion[] = [
   },
 ];
 
-// Aviso simplificado: contenido del popup de aceptación en el registro.
+// Aviso simplificado: se publica en su propia página y se liga desde la
+// casilla de consentimiento del registro.
 export const PRIVACIDAD_SIMPLIFICADO_TITULO =
   "AVISO DE PRIVACIDAD SIMPLIFICADO";
 
@@ -191,15 +193,12 @@ export const PRIVACIDAD_SIMPLIFICADO: AvisoSeccion[] = [
   },
 ];
 
-export const PRIVACIDAD_SIMPLIFICADO_CHECKBOX =
-  "He leído el Aviso de Privacidad simplificado.";
-
-// Texto del checkbox de consentimiento pleno en el formulario de registro.
-// Los enlaces se renderizan hacia las dos URLs del aviso integral.
+// Texto de la casilla de consentimiento del registro (validado por jurídico
+// el 20-nov-2026). Los enlaces se renderizan hacia el aviso simplificado y el
+// integral del mismo dominio.
 export const PRIVACIDAD_CONSENTIMIENTO = {
-  pre: "He leído el Aviso de Privacidad integral que se encuentra en ",
-  urlSite: PRIVACIDAD_URL_SITE,
-  mid: " y en ",
-  urlPortal: PRIVACIDAD_URL_PORTAL,
-  post: ", y mediante la selección de esta casilla manifiesto mi pleno consentimiento con el tratamiento que se le dará a mis Datos Personales y a mis Datos Personales Sensibles.",
+  pre: "He leído el ",
+  simplificado: "Aviso de Privacidad Simplificado",
+  mid: " y he sido notificado de que el Aviso de Privacidad Integral se encuentra en ",
+  post: ". Al marcar esta casilla otorgo mi consentimiento expreso para el tratamiento de mis datos personales, incluidos los sensibles, conforme a dichos avisos.",
 };
