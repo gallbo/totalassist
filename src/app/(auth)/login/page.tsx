@@ -17,11 +17,13 @@ import { loginSchema, type LoginInput } from "@/lib/schemas/auth";
 // Aviso al volver a login tras cambiar la contraseña o expirar la sesión.
 function AvisoSesion() {
   const params = useSearchParams();
-  const motivo = params.get("password")
-    ? "Tu contraseña se actualizó. Inicia sesión con tu nueva contraseña."
-    : params.get("expirada")
-      ? "Tu sesión expiró. Vuelve a iniciar sesión para continuar."
-      : null;
+  const motivo = params.get("activada")
+    ? "¡Tu cuenta quedó activada! Inicia sesión con tu correo y tu nueva contraseña."
+    : params.get("password")
+      ? "Tu contraseña se actualizó. Inicia sesión con tu nueva contraseña."
+      : params.get("expirada")
+        ? "Tu sesión expiró. Vuelve a iniciar sesión para continuar."
+        : null;
 
   if (!motivo) return null;
 
@@ -115,6 +117,12 @@ export default function LoginPage() {
           className="text-brand-navy text-sm hover:underline"
         >
           Olvidé mi contraseña
+        </Link>
+        <Link
+          href="/activar"
+          className="text-sm text-neutral-500 hover:underline"
+        >
+          ¿Te registraste y no has activado tu cuenta?
         </Link>
       </div>
 

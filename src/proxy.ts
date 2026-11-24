@@ -6,6 +6,8 @@ const publicRoutes = [
   "/registro",
   "/recuperar-acceso",
   "/restablecer",
+  // Registro en dos pasos (Skipper, migración 144): liga del correo de bienvenida.
+  "/activar",
   // Login del panel admin (Manuel). Sin esto el middleware lo trataria
   // como protegido y mandaria a /login del broker antes de que el admin
   // pueda entrar.
@@ -102,7 +104,11 @@ export default auth((req) => {
     }
   }
 
-  return NextResponse.next();
+  // El layout del portal necesita la ruta para mandar a /completar-perfil a
+  // quien no ha completado su registro (Skipper, migración 144).
+  const headers = new Headers(req.headers);
+  headers.set("x-pathname", pathname);
+  return NextResponse.next({ request: { headers } });
 });
 
 export const config = {

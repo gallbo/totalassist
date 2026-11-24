@@ -37,23 +37,56 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
-export const registerSchema = z
-  .object({
-    nombre: z.string().trim().min(2, "Ingresa tu nombre"),
-    apellido_paterno: z.string().trim().min(2, "Ingresa tu apellido paterno"),
-    apellido_materno: z
+export const registerSchema = z.object({
+  nombre: z.string().trim().min(2, "Ingresa tu nombre"),
+  apellido_paterno: z.string().trim().min(2, "Ingresa tu apellido paterno"),
+  apellido_materno: z
+    .string()
+    .trim()
+    .max(150, "Apellido materno demasiado largo")
+    .optional()
+    .or(z.literal("")),
+  email: z.email({ message: "Ingresa un correo válido" }),
+  telefono: z
+    .string()
+    .trim()
+    .min(8, "Ingresa un teléfono válido")
+    .regex(/^[0-9+\-\s()]+$/, "Solo números y símbolos de teléfono"),
+  cedula: cedulaPolicy,
+});
+
+export type RegisterInput = z.infer<typeof registerSchema>;
+
+// Registro en dos pasos (Skipper, migración 144): en la activación el agente
+// define su contraseña y completa su perfil con domicilio y RFC.
+const rfcPolicy = z
+  .string()
+  .trim()
+  .transform((value) => value.toUpperCase().replace(/\s+/g, ""))
+  .pipe(
+    z
       .string()
-      .trim()
-      .max(150, "Apellido materno demasiado largo")
-      .optional()
-      .or(z.literal("")),
-    email: z.email({ message: "Ingresa un correo válido" }),
-    telefono: z
-      .string()
-      .trim()
-      .min(8, "Ingresa un teléfono válido")
-      .regex(/^[0-9+\-\s()]+$/, "Solo números y símbolos de teléfono"),
-    cedula: cedulaPolicy,
+      .regex(
+        /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/,
+        "El RFC debe tener 13 caracteres (persona física) o 12 (persona moral).",
+      ),
+  );
+
+export const domicilioSchema = z.object({
+  rfc: rfcPolicy,
+  domicilio: z.string().trim().min(5, "Escribe calle, número y colonia"),
+  ciudad: z.string().trim().min(2, "Escribe tu ciudad o municipio"),
+  estado: z.string().trim().min(2, "Escribe tu estado"),
+  codigo_postal: z
+    .string()
+    .trim()
+    .regex(/^\d{5}$/, "El código postal debe tener 5 dígitos"),
+});
+
+export type DomicilioInput = z.infer<typeof domicilioSchema>;
+
+export const activarCuentaSchema = domicilioSchema
+  .extend({
     password: passwordPolicy,
     password_confirmation: z.string(),
   })
@@ -62,7 +95,7 @@ export const registerSchema = z
     path: ["password_confirmation"],
   });
 
-export type RegisterInput = z.infer<typeof registerSchema>;
+export type ActivarCuentaFormInput = z.infer<typeof activarCuentaSchema>;
 
 export const recoverSchema = z.object({
   email: z.email({ message: "Ingresa un correo válido" }),

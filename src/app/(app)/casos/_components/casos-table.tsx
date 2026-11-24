@@ -60,9 +60,16 @@ export function CasosTable({
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-brand-navy text-lg font-bold">
-        {initial.total} {initial.total === 1 ? "caso" : "casos"}
-      </h1>
+      <div>
+        <h1 className="text-brand-navy text-xl font-bold">Casos</h1>
+        <p className="text-sm text-neutral-600">
+          Siniestros de tus asegurados que registras para que nuestro equipo los
+          atienda. Aquí das seguimiento a cada uno.
+        </p>
+        <p className="text-brand-navy mt-2 text-sm font-semibold">
+          {initial.total} {initial.total === 1 ? "caso" : "casos"}
+        </p>
+      </div>
 
       <form
         onSubmit={onSubmitBusqueda}

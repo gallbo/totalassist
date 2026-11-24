@@ -50,8 +50,16 @@ export function PaquetesCliente({ paquetes, catalogo }: Props) {
 
   return (
     <div className="flex flex-col gap-8">
+      <div>
+        <h1 className="text-brand-navy text-xl font-bold">Paquetes</h1>
+        <p className="text-sm text-neutral-600">
+          Cada paquete te da un número de casos para registrar. Consulta los que
+          tienes y contrata más cuando los necesites.
+        </p>
+      </div>
+
       <section className="flex flex-col gap-4">
-        <h1 className="text-brand-navy text-lg font-bold">Mis paquetes</h1>
+        <h2 className="text-brand-navy text-lg font-bold">Mis paquetes</h2>
 
         {paquetes.length === 0 ? (
           <p className="text-sm text-neutral-600">

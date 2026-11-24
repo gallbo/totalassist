@@ -16,7 +16,7 @@ export function AgencyBadge({
     return (
       <div
         className={cn(
-          "relative h-10 w-10 overflow-hidden rounded-full border border-neutral-200 bg-white",
+          "relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-neutral-200 bg-white",
           className,
         )}
         aria-label={name}
@@ -37,7 +37,7 @@ export function AgencyBadge({
   return (
     <div
       className={cn(
-        "text-brand-navy flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-white text-[9px] leading-tight font-semibold",
+        "text-brand-navy flex aspect-square h-10 w-10 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-white text-xs leading-none font-semibold",
         className,
       )}
       aria-label={name}

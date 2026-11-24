@@ -40,7 +40,10 @@ export function EstadoCasosBloque({ counts, paqueteActivo }: Props) {
     paqueteActivo !== null && casosDisponibles <= UMBRAL_ALERTA;
 
   return (
-    <section className="flex flex-col gap-4 rounded-2xl bg-white p-5 ring-1 ring-neutral-200">
+    <section
+      data-tour="estado-casos"
+      className="flex flex-col gap-4 rounded-2xl bg-white p-5 ring-1 ring-neutral-200"
+    >
       <div className="flex items-center gap-3">
         <h2 className="text-brand-navy text-base font-bold">
           Estado de los casos

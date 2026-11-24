@@ -65,6 +65,12 @@ export function RechazoPrevioModal({
     else router.push("/dashboard");
   };
 
+  // "¿Solo tienes una duda?": manda a Consultas en vez de registrar un caso.
+  const irAConsultas = () => {
+    setAbierto(false);
+    router.push("/consultas/nueva");
+  };
+
   // Bloquea el scroll de la página mientras el modal está abierto.
   useEffect(() => {
     if (!abierto) return;
@@ -95,6 +101,7 @@ export function RechazoPrevioModal({
             onSi={() => setConRechazo(true)}
             onNo={continuar}
             onCancelar={cancelar}
+            onConsulta={irAConsultas}
           />
         )}
       </div>
@@ -108,10 +115,12 @@ function PasoPregunta({
   onSi,
   onNo,
   onCancelar,
+  onConsulta,
 }: {
   onSi: () => void;
   onNo: () => void;
   onCancelar: () => void;
+  onConsulta: () => void;
 }) {
   return (
     <>
@@ -166,6 +175,23 @@ function PasoPregunta({
           Total Assist acompaña la reclamación desde el aviso del siniestro,
           antes de que la aseguradora emita un rechazo.
         </p>
+
+        <div className="border-brand-yellow/60 bg-brand-yellow/10 flex flex-col gap-2 rounded-xl border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-neutral-700">
+            <span className="text-brand-navy font-semibold">
+              ¿Solo tienes una duda?
+            </span>{" "}
+            No registres un caso: haz una consulta.
+          </p>
+          <button
+            type="button"
+            onClick={onConsulta}
+            className="text-brand-navy flex shrink-0 items-center gap-1 self-start font-semibold underline underline-offset-2 sm:self-auto"
+          >
+            Hacer una consulta
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
 
         <button
           type="button"

@@ -91,9 +91,15 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-brand-navy text-2xl font-bold lg:text-3xl">
-        ¡Hola, {nombre}!
-      </h1>
+      <div>
+        <h1 className="text-brand-navy text-2xl font-bold lg:text-3xl">
+          ¡Hola, {nombre}!
+        </h1>
+        <p className="text-sm text-neutral-600">
+          Tu resumen: cómo van tus casos, los más recientes y las evaluaciones
+          de tus clientes.
+        </p>
+      </div>
 
       {/* Grid principal — izquierda dominante (7/5).
           En móvil se apila normal, izquierda primero. */}

@@ -2,16 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/lib/toast";
 import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
 import { Separator } from "@/components/ui/separator";
 import { BrandButton } from "@/components/ui/brand-button";
 import { Field } from "@/components/forms/field";
-import { RequisitosPassword } from "@/components/forms/requisitos-password";
 import { registerSchema, type RegisterInput } from "@/lib/schemas/auth";
 import { brokerApi } from "@/lib/api/brokers";
 import { ApiError } from "@/lib/api/client";
@@ -22,6 +19,7 @@ import {
   PRIVACIDAD_VERSION,
 } from "@/lib/privacidad";
 import { registrarEvento } from "@/lib/analitica";
+import { CorreoEnviado } from "@/components/correo-enviado";
 
 const ERROR_FIELD_MAP: Record<string, keyof RegisterInput> = {
   email_duplicado: "email",
@@ -29,8 +27,9 @@ const ERROR_FIELD_MAP: Record<string, keyof RegisterInput> = {
 };
 
 export default function RegistroPage() {
-  const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  // Registro en dos pasos: al terminar se muestra "revisa tu correo".
+  const [correoEnviado, setCorreoEnviado] = useState<string | null>(null);
   const [terminosAceptados, setTerminosAceptados] = useState(false);
   const [privacidadAceptada, setPrivacidadAceptada] = useState(false);
 
@@ -52,14 +51,11 @@ export default function RegistroPage() {
       email: "",
       telefono: "",
       cedula: "",
-      password: "",
-      password_confirmation: "",
     },
   });
 
   const valores = useWatch({ control });
   const formularioCompleto = registerSchema.safeParse(valores).success;
-  const password = valores.password ?? "";
 
   const confirmarRegistro = async (values: RegisterInput) => {
     setSubmitting(true);
@@ -71,7 +67,6 @@ export default function RegistroPage() {
         email: values.email,
         telefono: values.telefono,
         cedula: values.cedula,
-        password: values.password,
         acepta_terminos: true,
         terminos_version: TERMINOS_VERSION,
         acepta_privacidad: true,
@@ -79,8 +74,7 @@ export default function RegistroPage() {
       });
 
       registrarEvento("registro_completo");
-      toast.success("Cuenta creada. Inicia sesión con tus credenciales.");
-      router.push("/login");
+      setCorreoEnviado(values.email);
     } catch (error) {
       if (error instanceof ApiError && error.code) {
         const field = ERROR_FIELD_MAP[error.code];
@@ -106,6 +100,10 @@ export default function RegistroPage() {
     void confirmarRegistro(values);
   };
 
+  if (correoEnviado) {
+    return <CorreoEnviado email={correoEnviado} />;
+  }
+
   return (
     <>
       <form
@@ -113,9 +111,13 @@ export default function RegistroPage() {
         className="flex flex-col gap-6"
         noValidate
       >
-        <h1 className="text-brand-navy text-center text-3xl font-bold">
-          Crear cuenta
-        </h1>
+        <div className="flex flex-col gap-2 text-center">
+          <h1 className="text-brand-navy text-3xl font-bold">Crear cuenta</h1>
+          <p className="text-sm text-neutral-600">
+            Déjanos tus datos y te enviaremos un correo para activar tu cuenta y
+            crear tu contraseña.
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field
@@ -182,7 +184,7 @@ export default function RegistroPage() {
           </Field>
 
           <Field
-            label="Teléfono"
+            label="Teléfono celular"
             htmlFor="telefono"
             error={errors.telefono?.message}
           >
@@ -192,38 +194,6 @@ export default function RegistroPage() {
               autoComplete="tel"
               disabled={submitting}
               {...register("telefono")}
-            />
-          </Field>
-
-          <Field
-            label="Contraseña"
-            htmlFor="password"
-            error={errors.password?.message}
-          >
-            <div className="group flex flex-col gap-1.5">
-              <PasswordInput
-                id="password"
-                autoComplete="new-password"
-                disabled={submitting}
-                {...register("password")}
-              />
-              <RequisitosPassword
-                valor={password}
-                className="hidden group-focus-within:block"
-              />
-            </div>
-          </Field>
-
-          <Field
-            label="Confirmar contraseña"
-            htmlFor="password_confirmation"
-            error={errors.password_confirmation?.message}
-          >
-            <PasswordInput
-              id="password_confirmation"
-              autoComplete="new-password"
-              disabled={submitting}
-              {...register("password_confirmation")}
             />
           </Field>
         </div>
@@ -291,7 +261,7 @@ export default function RegistroPage() {
               !privacidadAceptada
             }
           >
-            {submitting ? "Registrando..." : "Registrarme"}
+            {submitting ? "Registrando..." : "Crear cuenta"}
           </BrandButton>
         </div>
 

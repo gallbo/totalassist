@@ -40,6 +40,8 @@ export function NavPills({
               <Link
                 key={item.href}
                 href={item.href}
+                // Anclas del recorrido guiado (components/tutorial-portal.tsx).
+                data-tour={`nav${item.href.replace(/\//g, "-")}`}
                 onClick={onNavigate}
                 className={cn(
                   "relative rounded-full py-2 text-sm font-medium",

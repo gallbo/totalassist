@@ -2,8 +2,19 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { apiSkipperTiposPregunta } from "@/lib/api/consultas-server";
 import { NuevaConsultaForm } from "../_components/nueva-consulta-form";
+import { BloqueoPerfilIncompleto } from "@/components/bloqueo-perfil-incompleto";
+import { brokerApi } from "@/lib/api/brokers";
+import { getServerAccessToken } from "@/lib/auth-tokens";
 
 export default async function NuevaConsultaPage() {
+  const token = await getServerAccessToken();
+  const config = token
+    ? await brokerApi.getConfig(token).catch(() => null)
+    : null;
+  if (config && config.perfil_completo === false) {
+    return <BloqueoPerfilIncompleto que="enviar consultas" />;
+  }
+
   let tiposPregunta: Awaited<ReturnType<typeof apiSkipperTiposPregunta>>;
   try {
     tiposPregunta = await apiSkipperTiposPregunta();

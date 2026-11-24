@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, LogOut, Menu, User } from "lucide-react";
+import { ChevronDown, Compass, LogOut, Menu, User } from "lucide-react";
 import { signOut } from "next-auth/react";
 import type { Session } from "next-auth";
 import { Logo } from "@/components/layout/logo";
@@ -20,6 +20,7 @@ import {
 import type { BrokerMe } from "@/lib/api/brokers";
 import { esBrokerPiloto } from "@/lib/piloto";
 import { InstallAppButton } from "@/components/pwa/install-app-button";
+import { abrirTutorial } from "@/components/tutorial-portal";
 
 type HeaderProps = {
   session: Session | null;
@@ -39,6 +40,8 @@ export function Header({ session, broker }: HeaderProps) {
   const userName = nombreCompleto || userEmail || "Broker";
   const logoUrl = broker?.logo_url ?? null;
   const mostrarPiloto = esBrokerPiloto(broker?.id);
+  // Perfil incompleto (migración 144): sin menú ni tutorial hasta completarlo.
+  const soloPerfil = broker?.perfil_completo === false;
 
   // Cerrar el menú al hacer click fuera o presionar Escape (patrón estándar
   // de dropdowns accesibles sin depender de una librería adicional).
@@ -75,9 +78,13 @@ export function Header({ session, broker }: HeaderProps) {
           <Logo variant="full" className="hidden h-12 xl:flex" />
         </Link>
 
-        <div className="hidden lg:flex">
-          <NavPills mostrarPiloto={mostrarPiloto} />
-        </div>
+        {soloPerfil ? (
+          <div className="hidden flex-1 lg:block" />
+        ) : (
+          <div className="hidden lg:flex">
+            <NavPills mostrarPiloto={mostrarPiloto} />
+          </div>
+        )}
 
         <div className="hidden min-w-0 items-center gap-3 lg:flex">
           {/* Instalar app: en piloto, solo para BROKERS_PILOTO (src/lib/piloto.ts). */}
@@ -90,6 +97,7 @@ export function Header({ session, broker }: HeaderProps) {
             <button
               type="button"
               onClick={() => setMenuAbierto((prev) => !prev)}
+              data-tour="menu-usuario"
               aria-haspopup="menu"
               aria-expanded={menuAbierto}
               className="flex min-w-0 items-center gap-1.5 text-right leading-tight"
@@ -121,6 +129,20 @@ export function Header({ session, broker }: HeaderProps) {
                   <User className="h-4 w-4" aria-hidden />
                   Perfil
                 </Link>
+                {soloPerfil ? null : (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuAbierto(false);
+                      abrirTutorial();
+                    }}
+                    className="hover:text-brand-navy flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-50"
+                  >
+                    <Compass className="h-4 w-4" aria-hidden />
+                    Ver tutorial
+                  </button>
+                )}
                 <button
                   type="button"
                   role="menuitem"
@@ -183,17 +205,32 @@ export function Header({ session, broker }: HeaderProps) {
 
               <Separator />
 
-              <NavPills
-                mostrarPiloto={mostrarPiloto}
-                orientation="vertical"
-                onNavigate={() => setOpen(false)}
-              />
+              {soloPerfil ? null : (
+                <NavPills
+                  mostrarPiloto={mostrarPiloto}
+                  orientation="vertical"
+                  onNavigate={() => setOpen(false)}
+                />
+              )}
             </div>
 
             <div className="flex flex-col gap-3 border-t border-neutral-200 p-4">
               {mostrarPiloto ? (
                 <InstallAppButton className="justify-center" />
               ) : null}
+              {soloPerfil ? null : (
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => {
+                    setOpen(false);
+                    abrirTutorial();
+                  }}
+                >
+                  <Compass className="h-4 w-4" aria-hidden />
+                  Ver tutorial
+                </Button>
+              )}
               <Button
                 variant="outline"
                 className="w-full"

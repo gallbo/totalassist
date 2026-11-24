@@ -8,7 +8,8 @@ export type RegistrarBrokerInput = {
   apellido_paterno: string;
   apellido_materno?: string | null;
   email: string;
-  password: string;
+  /** Migración 144: ya no se pide; la contraseña se define en la activación. */
+  password?: string;
   cedula: string;
   telefono?: string;
   acepta_terminos: boolean;
@@ -19,6 +20,7 @@ export type RegistrarBrokerInput = {
 
 export type BrokerConfig = {
   registro_casos_habilitado: boolean;
+  perfil_completo?: boolean;
 };
 
 export type RegistrarBrokerResponse = {
@@ -81,6 +83,24 @@ export type BrokerMe = {
   apellido_materno?: string | null;
   email: string;
   logo_url?: string | null;
+  /** Domicilio y RFC capturados: puede registrar siniestros y consultas. */
+  perfil_completo?: boolean;
+  /** Ya terminó u omitió el recorrido guiado. */
+  tutorial_visto?: boolean;
+  tutorial_mostrado_hoy?: boolean;
+};
+
+export type ActivacionInfo = { nombre: string; email: string };
+
+export type ActivarCuentaInput = {
+  token: string;
+  password: string;
+  password_confirmation: string;
+  rfc: string;
+  domicilio: string;
+  estado: string;
+  ciudad: string;
+  codigo_postal: string;
 };
 
 export type PerfilBroker = {
@@ -97,6 +117,7 @@ export type PerfilBroker = {
   contactos_atencion: ContactoAtencion[];
   promotorias: Promotoria[];
   redes_sociales: RedSocial[];
+  perfil_completo?: boolean;
 };
 
 export type ActualizarPerfilInput = {
@@ -504,6 +525,44 @@ export const brokerApi = {
       url: "/api/brokers/recuperar",
       data: { email },
     });
+  },
+
+  // Registro en dos pasos (Skipper, migración 144).
+  getActivacion(token: string) {
+    return request<ActivacionInfo>({
+      method: "GET",
+      url: `/api/brokers/activacion/${encodeURIComponent(token)}`,
+    });
+  },
+
+  activarCuenta(input: ActivarCuentaInput) {
+    return request<MensajeResponse & { email: string }>({
+      method: "POST",
+      url: "/api/brokers/activacion",
+      data: input,
+    });
+  },
+
+  reenviarActivacion(email: string) {
+    return request<MensajeResponse>({
+      method: "POST",
+      url: "/api/brokers/activacion/reenviar",
+      data: { email },
+    });
+  },
+
+  marcarTutorialMostrado(token: string) {
+    return request<{ ok: boolean }>(
+      { method: "POST", url: "/api/brokers/tutorial/mostrado" },
+      token,
+    );
+  },
+
+  marcarTutorialVisto(token: string) {
+    return request<{ ok: boolean }>(
+      { method: "POST", url: "/api/brokers/tutorial/visto" },
+      token,
+    );
   },
 
   resetearPassword(input: {

@@ -15,6 +15,8 @@ import { ApiError } from "@/lib/api/client";
 import { getServerAccessToken } from "@/lib/auth-tokens";
 import { esBrokerPiloto } from "@/lib/piloto";
 import { NuevoCasoCliente } from "./_components/nuevo-caso-cliente";
+import { BloqueoPerfilIncompleto } from "@/components/bloqueo-perfil-incompleto";
+import { AvisoCasoOConsulta } from "@/components/aviso-caso-o-consulta";
 
 type Datos =
   | {
@@ -34,6 +36,9 @@ export default async function NuevoCasoPage() {
   }
 
   const config = await brokerApi.getConfig(token).catch(() => null);
+  if (config && config.perfil_completo === false) {
+    return <BloqueoPerfilIncompleto que="registrar siniestros" />;
+  }
   if (config && !config.registro_casos_habilitado) {
     return (
       <PageCard>
@@ -107,15 +112,18 @@ export default async function NuevoCasoPage() {
   }
 
   return (
-    <PageCard>
-      <NuevoCasoCliente
-        aseguradoras={datos.aseguradoras}
-        tiposSeguro={datos.tiposSeguro}
-        estados={datos.estados}
-        paqueteActivo={datos.paqueteActivo}
-        cuestionarios={datos.cuestionarios}
-        mostrarRechazoPrevio={mostrarRechazoPrevio}
-      />
-    </PageCard>
+    <div className="flex flex-col gap-4">
+      <AvisoCasoOConsulta />
+      <PageCard>
+        <NuevoCasoCliente
+          aseguradoras={datos.aseguradoras}
+          tiposSeguro={datos.tiposSeguro}
+          estados={datos.estados}
+          paqueteActivo={datos.paqueteActivo}
+          cuestionarios={datos.cuestionarios}
+          mostrarRechazoPrevio={mostrarRechazoPrevio}
+        />
+      </PageCard>
+    </div>
   );
 }
