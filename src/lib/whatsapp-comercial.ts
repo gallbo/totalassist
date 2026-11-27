@@ -8,7 +8,7 @@
  * (siteConfig.whatsappUrl). Si se deja vacío, los botones se muestran
  * deshabilitados como "disponible muy pronto".
  */
-export const WHATSAPP_COMERCIAL = "525561455557";
+export const WHATSAPP_COMERCIAL = "526674285055";
 
 /** Mensajes precargados según la sección desde la que escribe el broker. */
 export const MENSAJES_WHATSAPP = {
