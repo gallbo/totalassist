@@ -37,66 +37,67 @@ const PASOS: Paso[] = [
   {
     titulo: "¡Bienvenido a Total Assist!",
     texto:
-      "Te mostramos en un minuto dónde está cada cosa del portal. Puedes avanzar con los botones o con las flechas del teclado.",
+      "Conoce las principales funciones de nuestra plataforma. Puedes avanzar con los botones o las flechas de tu teclado.",
   },
   {
     ancla: "nav-dashboard",
     titulo: "Dashboard",
     texto:
-      "Tu resumen: cómo van tus casos, las evaluaciones de tus clientes y cuántos siniestros has registrado en el año.",
+      "Consulta el estado de tus casos, las evaluaciones de tus clientes y el número de siniestros que has registrado durante el año.",
     enMenu: true,
   },
   {
     ancla: "estado-casos",
     titulo: "Estado de tus casos",
     texto:
-      "Los casos en proceso, los que te quedan en tu paquete y los que están detenidos esperando algo de ti o de tu cliente.",
+      "Identifica los casos en proceso, los que requieren alguna acción de tu parte o de tu cliente y los que aún tienes disponibles en tu paquete.",
   },
   {
     ancla: "nav-casos",
-    titulo: "Casos: registro y seguimiento de siniestros",
+    titulo: "Registro y seguimiento de casos",
     texto:
-      "Cuando tu cliente sufrió un siniestro, regístralo aquí con el botón «Registrar caso». En esta misma sección das seguimiento a cada siniestro: avance, documentos y resultado.",
+      "¿Tu cliente tuvo un siniestro? Haz clic en «Registrar caso». Desde esta sección podrás consultar su avance, documentación y resolución.",
     enMenu: true,
   },
   {
     ancla: "nav-paquetes",
-    titulo: "Paquetes",
+    titulo: "Tus paquetes",
     texto:
-      "Los casos que tienes disponibles y la opción de contratar más cuando los necesites.",
+      "Consulta cuántos casos tienes disponibles y contrata más cuando los necesites.",
     enMenu: true,
   },
   {
     ancla: "nav-consultas",
     titulo: "Consultas técnico-jurídicas",
     texto:
-      "Para dudas técnicas, jurídicas o de interpretación de pólizas y del sector asegurador. Te responde un especialista por este mismo canal. Una consulta no registra un siniestro: si tu cliente ya tuvo uno, regístralo en Casos.",
+      "Resuelve tus dudas sobre seguros, aspectos jurídicos e interpretación de pólizas con el apoyo de un especialista. Para registrar un siniestro, utiliza la sección de «Casos».",
     enMenu: true,
   },
   {
     ancla: "nav-conferencias",
     titulo: "Conferencias",
-    texto: "Cursos, talleres y conferencias para agentes de seguros.",
+    texto:
+      "Encuentra cursos, talleres y conferencias diseñados para fortalecer tu actividad como Agente de Seguros.",
     enMenu: true,
   },
   {
     ancla: "nav-defensa-legal",
     titulo: "Defensa Legal",
     texto:
-      "Si necesitas apoyo legal para ti o tu cliente, desde aquí nos contactas directamente.",
+      "¿Necesitas asistencia legal para ti? Solicítala desde esta sección.",
     enMenu: true,
   },
   {
     ancla: "menu-usuario",
-    titulo: "Tu perfil y esta guía",
+    titulo: "Tu perfil",
     texto:
-      "Aquí actualizas tus datos y tu logo. Si quieres repasar el portal, elige «Ver tutorial» y esta guía se abre otra vez.",
+      "Actualiza tus datos y agrega tu logotipo. Si deseas volver a consultar esta guía, selecciona «Ver tutorial».",
     enMenu: true,
   },
   {
-    titulo: "¡Listo!",
+    titulo: "¡Todo listo!",
     texto:
-      "Ya conoces el portal. Si tienes cualquier duda, escríbenos por WhatsApp y con gusto te ayudamos.",
+      "Explora la plataforma y aprovecha sus herramientas. Si tienes alguna duda, escríbenos por WhatsApp. ¡Con gusto te ayudamos!",
   },
 ];
 
